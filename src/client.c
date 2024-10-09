@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include "banking.h"
+#include "customer.h"
 
 int main() {
     int sockfd;
@@ -50,6 +51,11 @@ int main() {
 
         // If login is successful, break the loop
         if (strcmp(buffer, "Login Failed!") != 0) {
+            memset(buffer, 0, sizeof(buffer));
+            recv(sockfd, buffer, sizeof(buffer), 0);
+            if (strcmp(buffer, "Customer") == 0) {
+                displayCustomerMenu(username);
+            }
             break;
         }
 
