@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include "banking.h"
 #include "customer.h"
+#include "employee.h"
 
 int main() {
     int sockfd;
@@ -54,8 +55,15 @@ int main() {
             memset(buffer, 0, sizeof(buffer));
             recv(sockfd, buffer, sizeof(buffer), 0);
             if (strcmp(buffer, "Customer") == 0) {
+                memset(buffer, 0, sizeof(buffer)); 
                 displayCustomerMenu(username);
+
             }
+            else if (strcmp(buffer,"Employee")==0){
+                memset(buffer, 0, sizeof(buffer)); 
+                displayEmployeeMenu(username);
+            }
+
             break;
         }
 

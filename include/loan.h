@@ -13,7 +13,7 @@ typedef struct {
     double loanAmount;              
     float interestRate;             
     int durationMonths;             
-    char status[15];                 // Loan status: "Approved", "Pending", "Rejected"
+    char status[15];                 // Loan status: "Approved", "Pending", "Rejected", "Processing"
     char assignedEmployeeId[30];     
 } Loan;
 

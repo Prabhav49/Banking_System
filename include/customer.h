@@ -12,9 +12,9 @@ void applyForLoan(const char *username);
 void changePassword(const char *username);
 void addFeedback(const char *username);
 void viewTransactionHistory(const char *username);
-void logout();
 void userInfo(const char *username); 
 void checkLoanStatus(const char *username);
+
 
 
 #endif

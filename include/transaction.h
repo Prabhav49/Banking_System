@@ -3,17 +3,19 @@
 #define TRANSACTION_H
 
 typedef struct {
-    int transactionId;    // Unique transaction ID
-    int senderId;         // Sender's user ID
-    int receiverId;       // Receiver's user ID
+    int transactionId;   // Unique transaction ID
+    char tranUser[50];
+    char sendUser[50];        // Sender's user ID
+    char recUser[50];      // Receiver's user ID
     char type[20];        // Type of transaction (e.g., "Transfer")
     float amount;         // Amount of the transaction
+    float currBalance;
     char dateTime[20];    // Date and time of transaction
 } Transaction;
 
 // Function declarations
 int generateTransactionId(void);
-void recordTransaction(int senderId, int receiverId, const char *type, float amount);
+void recordTransaction(const char *tranUser,const char *sendUser, const char *recUser, const char *type, float amount, float currBalance);
 void viewTransactionHistory(const char *username);
 
 #endif // TRANSACTION_H

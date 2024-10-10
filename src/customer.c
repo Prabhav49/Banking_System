@@ -12,7 +12,10 @@
 
 #define MAX_PASSWORD_LENGTH 50
 #define USER_DB_PATH "../db/users.db"
-#define LOAN_DB_PATH "../db/loans.db" 
+#define LOAN_DB_PATH "../db/loans.db"
+#define MAX_USERS 100 
+#define DB_PATH "../db/users.db"
+
 
 void displayCustomerMenu(const char *username) {
     int choice;
@@ -63,7 +66,7 @@ void displayCustomerMenu(const char *username) {
                 changePassword(username);
                 break;    
             case 10:
-                logout();
+                exit(0);
                 return; 
             case 11:
                 exit(0);
@@ -95,7 +98,7 @@ int generateTransactionId() {
     return maxId + 1; 
 }
 
-void recordTransaction(int senderId, int receiverId, const char *type, float amount) {
+void recordTransaction(const char *tranUser,const char *sendUser,const char *recUser, const char *type, float amount,float currBalance) {
     FILE *file = fopen("../db/transactions.db", "ab");
     if (!file) {
         perror("Failed to open transactions database");
@@ -104,10 +107,12 @@ void recordTransaction(int senderId, int receiverId, const char *type, float amo
 
     Transaction transaction;
     transaction.transactionId = generateTransactionId();
-    transaction.senderId = senderId; 
-    transaction.receiverId = receiverId;
+    strcpy(transaction.tranUser , tranUser);
+    strcpy(transaction.sendUser ,sendUser);
+    strcpy(transaction.recUser ,recUser);
     strcpy(transaction.type, type);
     transaction.amount = amount;
+    transaction.currBalance = currBalance;
 
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
@@ -172,7 +177,7 @@ void depositMoney(const char *username) {
                 fseek(file, -sizeof(User), SEEK_CUR); 
                 fwrite(&user, sizeof(User), 1, file); 
                 printf("Deposited %.2f to %s's account. New balance: %.2f\n", depositAmount, user.username, user.balance);
-                recordTransaction(user.id, user.id, "Deposit", depositAmount); 
+                recordTransaction(user.username,user.username, user.username, "Deposit", depositAmount, user.balance); 
          
             } else {
                 printf("User account is inactive. Cannot deposit money.\n");
@@ -218,7 +223,7 @@ void withdrawMoney(const char *username) {
                 fseek(file, -sizeof(User), SEEK_CUR); 
                 fwrite(&user, sizeof(User), 1, file); 
                 printf("Withdrawed %.2f to %s's account. New balance: %.2f\n", withdrawAmount, user.username, user.balance);
-                recordTransaction(user.id, user.id, "Withdrawal", withdrawAmount); 
+                recordTransaction(user.username,user.username, user.username, "Withdrawal", withdrawAmount,user.balance); 
           
             } else {
                 printf("User account is inactive. Cannot deposit money.\n");
@@ -236,77 +241,99 @@ void withdrawMoney(const char *username) {
 }
 
 void transferFunds(const char *username) {
-    int recipientId;
-    float transferAmount;
-
-    // Prompt for recipient ID and transfer amount
-    printf("Enter recipient ID: ");
-    scanf("%d", &recipientId);
-    printf("Enter amount to transfer: ");
-    scanf("%f", &transferAmount);
-
     FILE *file = fopen("../db/users.db", "r+b");
     if (!file) {
         perror("Failed to open database");
         return;
     }
 
-    User sender, recipient;
-    int foundSender = 0, foundRecipient = 0;
+    User sender;
+    User recipient;
+    float transferAmount;
+    char recipientUsername[50];
+    int foundSender = 0;
+    int foundRecipient = 0;
 
-    // Read all users to find sender and recipient
+    // Ask the user for the transfer amount
+    printf("Enter the amount to transfer: ");
+    scanf("%f", &transferAmount);
+    printf("Enter recipient username: ");
+    scanf("%49s", recipientUsername); 
+
+    // Read through the file to find the sender
     while (fread(&sender, sizeof(User), 1, file)) {
-        // Check if the current user is the sender
         if (strcmp(sender.username, username) == 0) {
-            foundSender = 1; // Found the sender
-        }
-        // Check if the current user is the recipient
-        if (sender.id == recipientId) {
-            recipient = sender; // Keep recipient info
-            foundRecipient = 1; // Found the recipient
-        }
-
-        if (foundSender && foundRecipient) {
-            break; // Stop if both users are found
+            if (sender.active) {
+                foundSender = 1; 
+                if (sender.balance < transferAmount) {
+                    printf("Error: Transfer amount exceeds current balance. Transaction failed.\n");
+                    fclose(file);
+                    return; 
+                }
+            } else {
+                printf("User account is inactive. Cannot transfer money.\n");
+                fclose(file);
+                return;
+            }
+            break; // Exit loop once the sender is found
         }
     }
 
-    // Check if the sender was found
+    // Check if sender was found
     if (!foundSender) {
         printf("Sender not found.\n");
         fclose(file);
         return;
     }
 
-    // Check if the recipient was found
+    // Reset file pointer to start searching for the recipient
+    rewind(file);
+
+    // Search for the recipient
+    long recipientPos = -1; // To keep track of recipient's position
+    while (fread(&recipient, sizeof(User), 1, file)) {
+        if (strcmp(recipient.username, recipientUsername) == 0) {
+            foundRecipient = 1;  
+            recipientPos = ftell(file) - sizeof(User); // Save position for the recipient
+            break; 
+        }
+    }
+
+    fclose(file); // Close the file after reading
+
+    // Check if recipient was found
     if (!foundRecipient) {
         printf("Recipient not found.\n");
-        fclose(file);
         return;
     }
 
-    // Check if the sender has sufficient balance
-    if (sender.balance < transferAmount) {
-        printf("Insufficient funds. Transfer failed.\n");
-    } else {
-        // Update balances
-        sender.balance -= transferAmount;
-        recipient.balance += transferAmount;
+    // If both sender and recipient are valid, proceed with the transfer
+    // Update balances
+    sender.balance -= transferAmount; 
+    recipient.balance += transferAmount; 
 
-        // Move back to the sender's position and update
-        fseek(file, -sizeof(User) * 2, SEEK_CUR);
-        fwrite(&sender, sizeof(User), 1, file); // Write updated sender
-        fseek(file, -sizeof(User), SEEK_CUR); // Move back to recipient's position
-        fwrite(&recipient, sizeof(User), 1, file); // Write updated recipient
-
-        // Record the transaction
-        recordTransaction(sender.id, recipient.id, "Transfer", transferAmount);
-    
-        printf("Successfully transferred %.2f to user ID %d.\n", transferAmount, recipientId);
+    // Reopen the file to write the updated balances
+    file = fopen("../db/users.db", "r+b");
+    if (!file) {
+        perror("Failed to open database");
+        return;
     }
 
-    fclose(file);
+    // Write back updated sender information
+    fseek(file, -sizeof(User), SEEK_CUR); 
+    fwrite(&sender, sizeof(User), 1, file); 
+
+    // Update the recipient's information
+    fseek(file, recipientPos, SEEK_SET); // Move to the recipient's position
+    fwrite(&recipient, sizeof(User), 1, file); 
+
+    fclose(file); // Close the file after writing
+
+    printf("Transferred %.2f to %s's account. New balance: %.2f\n", transferAmount, recipient.username, sender.balance);
+    recordTransaction(sender.username,sender.username, recipient.username, "Transfer", transferAmount, sender.balance); 
+    recordTransaction(recipient.username,sender.username, recipient.username, "Transfer", transferAmount, recipient.balance); 
 }
+
 
 
 void viewTransactionHistory(const char *username) {
@@ -345,21 +372,23 @@ void viewTransactionHistory(const char *username) {
     int foundTransactions = 0;
 
     printf("Transaction History for User %s (ID: %d):\n", username, user.id);
-    printf("--------------------------------------------------------------------------------------------------\n");
-    printf("%-15s %-15s %-15s %-15s %-10s %s\n", "Transaction ID", "Sender ID", "Receiver ID", "Type", "Amount", "Date/Time");
-    printf("--------------------------------------------------------------------------------------------------\n");
+    printf("----------------------------------------------------------------------------------------------------------\n");
+    printf("%-15s %-15s %-15s %-15s %-10s %-10s %s\n", "Transaction ID", "Sender ID", "Receiver ID", "Type", "Amount","Balance", "Date/Time");
+    printf("----------------------------------------------------------------------------------------------------------\n");
 
     // Read all transactions and filter by user ID
     while (fread(&transaction, sizeof(Transaction), 1, file)) {
-        if (transaction.senderId == user.id || transaction.receiverId == user.id) {
+        if (strcmp(transaction.tranUser, user.username) == 0) {
             foundTransactions = 1; 
-            printf("%-15d %-15d %-15d %-15s %.2f %s\n", 
-                   transaction.transactionId, 
-                   transaction.senderId, 
-                   transaction.receiverId, 
+            printf("%-15d  %-15s %-15s %-15s %.2f %.2f %s\n", 
+                   transaction.transactionId,
+                   transaction.sendUser, 
+                   transaction.recUser, 
                    transaction.type, 
-                   transaction.amount, 
+                   transaction.amount,
+                   transaction.currBalance, 
                    transaction.dateTime);
+                   
         }
     }
 
@@ -536,6 +565,7 @@ void userInfo(const char *username){
 
     // Print user information if found
     if (found) {
+        printf("\n-------------------------------------------------\n");
         printf("User Information:\n");
         printf("ID: %d\n", user.id);
         printf("Name: %s\n", user.fullName);
@@ -543,6 +573,7 @@ void userInfo(const char *username){
         printf("Role: %s\n", user.role);
         printf("Balance: %.2f\n", user.balance);
         printf("Account Status: %s\n", user.active ? "Active" : "Inactive");
+        printf("-------------------------------------------------\n");
     } else {
         printf("User not found.\n");
     }

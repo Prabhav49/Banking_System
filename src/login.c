@@ -39,25 +39,3 @@ const char* checkRole(const char *username, User users[], int userCount) {
     }
     return "Login Failed!";
 }
-
-int lockUserRecord(int fd, int recordIndex) {
-    struct flock lock;
-    lock.l_type = F_WRLCK;  // Write lock
-    lock.l_whence = SEEK_SET;
-    lock.l_start = recordIndex * sizeof(User);  // Lock the specific record
-    lock.l_len = sizeof(User);
-    lock.l_pid = getpid();
-
-    return fcntl(fd, F_SETLKW, &lock);  // Lock the record
-}
-
-int unlockUserRecord(int fd, int recordIndex) {
-    struct flock lock;
-    lock.l_type = F_UNLCK;  // Unlock
-    lock.l_whence = SEEK_SET;
-    lock.l_start = recordIndex * sizeof(User);  // Unlock the specific record
-    lock.l_len = sizeof(User);
-    lock.l_pid = getpid();
-
-    return fcntl(fd, F_SETLK, &lock);  // Unlock the record
-}
