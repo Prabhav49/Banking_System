@@ -6,6 +6,7 @@
 #include "banking.h"
 #include "customer.h"
 #include "employee.h"
+#include "manager.h"
 
 int main() {
     int sockfd;
@@ -62,6 +63,11 @@ int main() {
             else if (strcmp(buffer,"Employee")==0){
                 memset(buffer, 0, sizeof(buffer)); 
                 displayEmployeeMenu(username);
+            }
+
+            else if (strcmp(buffer,"Manager")==0){
+                memset(buffer, 0, sizeof(buffer)); 
+                displayManMenu(username);
             }
 
             break;

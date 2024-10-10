@@ -14,6 +14,7 @@ void addFeedback(const char *username);
 void viewTransactionHistory(const char *username);
 void userInfo(const char *username); 
 void checkLoanStatus(const char *username);
+void checkFeedBackStatus(const char* username);
 
 
 

@@ -8,8 +8,9 @@
 #define LOAN_DB_PATH "../db/loans.db"  
 
 typedef struct {
+    int loanId;
     char username[30]; 
-     char userId[30];               
+    char userId[30];               
     double loanAmount;              
     float interestRate;             
     int durationMonths;             

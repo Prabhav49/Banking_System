@@ -6,20 +6,33 @@
 
 const char* authenticate(const char *username, const char *password, User users[], int userCount) {
     static char msg[50];
+    int usernameFound = 0;
 
     for (int i = 0; i < userCount; i++) {
-        if (strcmp(users[i].username, username) == 0 && strcmp(users[i].password, password) == 0) {
-            if (users[i].active == 1) {
-                strcpy(msg, "Login Successful!");
+        if (strcmp(users[i].username, username) == 0) {
+            usernameFound = 1;  // Username exists
+            if (strcmp(users[i].password, password) == 0) {
+                // Password matches, now check account status
+                if (users[i].active == 1) {
+                    strcpy(msg, "Login Successful!");
+                } else {
+                    strcpy(msg, "Login Failed! Account is inactive.");
+                }
             } else {
-                strcpy(msg, "Login Failed! Account is inactive.");
+                // Username exists but password is incorrect
+                strcpy(msg, "Password is incorrect.");
             }
             return msg;
         }
     }
-    return "Login Failed!";
-}
 
+    // Username not found
+    if (!usernameFound) {
+        strcpy(msg, "Username does not exist.");
+    }
+
+    return msg;
+}
 void loadUsers(User users[], int *userCount) {
     FILE *file = fopen("../db/users.db", "rb");
     if (!file) {
