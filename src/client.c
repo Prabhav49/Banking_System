@@ -7,6 +7,7 @@
 #include "customer.h"
 #include "employee.h"
 #include "manager.h"
+#include "admin.h"
 
 int main() {
     int sockfd;
@@ -69,6 +70,12 @@ int main() {
                 memset(buffer, 0, sizeof(buffer)); 
                 displayManMenu(username);
             }
+            else if (strcmp(buffer,"Admin") == 0){
+                memset(buffer, 0, sizeof(buffer)); 
+                displayAdminMenu(username);
+            }
+
+            
 
             break;
         }

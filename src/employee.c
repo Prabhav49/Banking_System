@@ -161,8 +161,7 @@ void addNewCustomer(){
     // printf("Enter Role (Customer/Employee): ");
     // scanf("%19s", role);
 
-    printf("Enter Balance: ");
-    scanf("%lf", &balance);
+    balance = 0.00;
 
     printf("Is the account active? (1 for Yes, 0 for No): ");
     scanf("%d", &active);
@@ -176,64 +175,75 @@ void addNewCustomer(){
 }
 
 void modifyCustomerDetail() {
+     User userRecord;
     char username[50];
-    User user;
     int found = 0;
 
-    // Prompt for the username to modify details
-    printf("Enter the username of the customer to modify: ");
-    scanf("%49s", username);
+    // Ask for the username whose details need to be modified
+    printf("Enter the username of the Customer to modify: ");
+    scanf("%s", username);
 
-    // Open the database file in read/write mode
-    FILE *file = fopen("../db/users.db", "r+b");
-    if (!file) {
-        perror("Failed to open users.db");
+    FILE *userFile = fopen(USER_DB_PATH, "rb+");  // Open file for reading and writing
+    if (userFile == NULL) {
+        printf("Error: Could not open user database.\n");
         return;
     }
 
-    // Search for the user in the database
-    while (fread(&user, sizeof(User), 1, file)) {
-        if (strcmp(user.username, username) == 0) {
+    // Loop through the user database to find the matching username
+    while (fread(&userRecord, sizeof(User), 1, userFile)) {
+        if (strcmp(userRecord.username, username) == 0) {
+            if (strcmp(userRecord.role, "Employee") == 0 || strcmp(userRecord.role, "Manager") == 0 || strcmp(userRecord.role, "Admin") == 0)  {
+                printf("Error: You cannot modify the details of an Employee/Manager/Admin user.\n");
+                fclose(userFile);
+                return;
+            }
+
             found = 1;
+
+            // Display current information of the customer/employee
+            printf("\nCurrent Information for Username: %s\n", userRecord.username);
+            printf("Full Name: %s\n", userRecord.fullName);
+            printf("Role: %s\n", userRecord.role);
+            printf("Balance: %.2f\n", userRecord.balance);
+            printf("Account Status: %s\n", userRecord.active ? "Active" : "Inactive");
+            printf("-------------------------------------\n");
+
+            // Ask which details to modify (without balance modification)
+            char choice;
+            printf("Do you want to modify the full name? (y/n): ");
+            scanf(" %c", &choice);
+            if (choice == 'y' || choice == 'Y') {
+                printf("Enter new full name: ");
+                getchar();  // Consume leftover newline character
+                fgets(userRecord.fullName, sizeof(userRecord.fullName), stdin);
+                userRecord.fullName[strcspn(userRecord.fullName, "\n")] = '\0';  // Remove newline
+            }
+
+            printf("Do you want to modify the password? (y/n): ");
+            scanf(" %c", &choice);
+            if (choice == 'y' || choice == 'Y') {
+                printf("Enter new password: ");
+                scanf("%s", userRecord.password);
+            }
+
+            printf("Do you want to change the account status? (1 for active, 0 for inactive): ");
+            scanf("%d", &userRecord.active);
+
+            // Move the file pointer back by one record to overwrite the current record
+            fseek(userFile, -sizeof(User), SEEK_CUR);
+            fwrite(&userRecord, sizeof(User), 1, userFile);
+            fflush(userFile);
+
+            printf("Details updated successfully for username: %s\n", username);
             break;
         }
     }
 
-    // If user is found, prompt for details to modify
-    if (found) {
-        printf("User found. You can modify the following details:\n");
-
-        // Modify Full Name
-        printf("Enter new Full Name (currently: %s): ", user.fullName);
-        getchar();  // To clear newline from previous input
-        fgets(user.fullName, sizeof(user.fullName), stdin);
-        user.fullName[strcspn(user.fullName, "\n")] = 0; // Remove trailing newline
-
-        // Modify Password
-        printf("Enter new Password (currently: %s): ", user.password);
-        scanf("%49s", user.password);
-
-        // Modify Balance
-        printf("Enter new Balance (currently: %.2f): ", user.balance);
-        scanf("%lf", &user.balance);
-
-        // Modify Account Status
-        printf("Is the account active? (currently: %d, 1 for Yes, 0 for No): ", user.active);
-        scanf("%d", &user.active);
-
-        // Move file pointer to the start of the current user record
-        fseek(file, -sizeof(User), SEEK_CUR);
-
-        // Update the user details in the file
-        fwrite(&user, sizeof(User), 1, file);
-
-        printf("Customer details updated successfully!\n");
-    } else {
-        printf("Error: User with username '%s' not found.\n", username);
+    if (!found) {
+        printf("Error: Username '%s' not found.\n", username);
     }
 
-    // Close the file
-    fclose(file);
+    fclose(userFile);
 }
 
 
