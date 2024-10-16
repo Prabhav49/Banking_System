@@ -16,6 +16,7 @@ void displayUsersInTable() {
     }
 
     // Print table header
+<<<<<<< HEAD
     printf("+----+---------------------------+------------------+------------------+------------------+-----------+-------------+---------+--------+\n");
     printf("| ID | Full Name                 | Username         | Password         | Role             | Balance   | Status      | Active  |  Status \n");
     printf("+----+---------------------------+------------------+------------------+------------------+-----------+-------------+---------+--------+\n");
@@ -23,6 +24,15 @@ void displayUsersInTable() {
     // Read and display all records
     while (fread(&user, sizeof(User), 1, file)) {
         printf("| %-2d | %-25s | %-16s | %-16s | %-16s | %-9.2f | %-11s | %-7s | %-7s |\n",
+=======
+    printf("+----+---------------------------+------------------+------------------+------------------+-----------+-------------+---------+\n");
+    printf("| ID | Full Name                 | Username         | Password         | Role             | Balance   | Status      | Active  |\n");
+    printf("+----+---------------------------+------------------+------------------+------------------+-----------+-------------+---------+\n");
+
+    // Read and display all records
+    while (fread(&user, sizeof(User), 1, file)) {
+        printf("| %-2d | %-25s | %-16s | %-16s | %-16s | %-9.2f | %-11s | %-7s |\n",
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
             user.id,
             user.fullName,
             user.username,
@@ -30,8 +40,12 @@ void displayUsersInTable() {
             user.role,
             user.balance,
             user.active ? "Active" : "Inactive",
+<<<<<<< HEAD
             user.active ? "Yes" : "No",
             user.isLogIn? "True": "False");
+=======
+            user.active ? "Yes" : "No");
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
     }
 
     // Print table footer
@@ -43,4 +57,8 @@ void displayUsersInTable() {
 int main() {
     displayUsersInTable();
     return 0;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda

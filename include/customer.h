@@ -15,6 +15,9 @@ void viewTransactionHistory(const char *username);
 void userInfo(const char *username); 
 void checkLoanStatus(const char *username);
 void checkFeedBackStatus(const char* username);
+<<<<<<< HEAD
 void customerCase(const char* username,int choice);
+=======
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
 
 #endif

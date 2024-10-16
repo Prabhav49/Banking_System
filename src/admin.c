@@ -20,6 +20,7 @@
 #define LOAN_DB_PATH "../db/loans.db" 
 
 
+<<<<<<< HEAD
 // void displayAdminMenu(const char *username) {
 //     int choice;
 
@@ -66,6 +67,26 @@
 
 void adminCase(const char* username,int choice){
     switch (choice) {
+=======
+void displayAdminMenu(const char *username) {
+    int choice;
+
+    while (1) {
+        printf("\nAdministration Menu:\n");
+        printf("1. Add New Bank Employee\n");
+        printf("2. Modify Customer/Employee Details\n");
+        printf("3. Manage User Roles\n");
+        printf("4. Change Password\n");
+        printf("5. Logout\n");
+        printf("6. Exit\n");
+        printf("7. User Info\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+
+
+        switch (choice) {
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
             case 1:
                 addNewEmp();
                 break;
@@ -89,6 +110,10 @@ void adminCase(const char* username,int choice){
             default:
                 printf("Invalid choice! Please try again.\n");
         }
+<<<<<<< HEAD
+=======
+    }
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
 }
 
 void addNewEmp(){

@@ -14,11 +14,16 @@
 #include "loan.h"
 #include "customer.h"
 #include "feed.h"
+<<<<<<< HEAD
+=======
+
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
 #define MAX_PASSWORD_LENGTH 50
 #define USER_DB_PATH "../db/users.db"
 #define LOAN_DB_PATH "../db/loans.db" 
 
 
+<<<<<<< HEAD
 // void displayManMenu(const char *username) {
 //     int choice;
 
@@ -66,6 +71,26 @@
 
 void manCase(const char* username,int choice){
      switch (choice) {
+=======
+void displayManMenu(const char *username) {
+    int choice;
+
+    while (1) {
+        printf("\nManager Menu:\n");
+        printf("1. Activate/Deactivate Customer Account\n");
+        printf("2. Assign Loan Application to Employee\n");
+        printf("3. Review Customer Feedback\n");
+        printf("4. Change Password\n");
+        printf("5. Logout\n");
+        printf("6. Exit\n");
+        printf("7. User Info\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+
+
+        switch (choice) {
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
             case 1:
                 activateOrDeactivate();
                 break;
@@ -79,8 +104,13 @@ void manCase(const char* username,int choice){
                 changePassword(username);
                 break;
             case 5:
+<<<<<<< HEAD
                 logout(username);
                 break;
+=======
+                printf("Logging Out");
+                exit(0);
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
             case 6:
                 exit(0); 
             case 7:
@@ -89,6 +119,10 @@ void manCase(const char* username,int choice){
             default:
                 printf("Invalid choice! Please try again.\n");
         }
+<<<<<<< HEAD
+=======
+    }
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
 }
 
 void activateOrDeactivate() {
@@ -324,3 +358,8 @@ void reviewCustFeedBack() {
 
     fclose(feedFile);
 }
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda

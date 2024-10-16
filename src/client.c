@@ -8,8 +8,11 @@
 #include "employee.h"
 #include "manager.h"
 #include "admin.h"
+<<<<<<< HEAD
 
 #define MAX_BUFFER 1024
+=======
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
 
 int main() {
     int sockfd, choice;
@@ -138,8 +141,23 @@ int main() {
 
             }
 
+<<<<<<< HEAD
         } else {
             printf("Login failed. Please try again.\n");
+=======
+            else if (strcmp(buffer,"Manager")==0){
+                memset(buffer, 0, sizeof(buffer)); 
+                displayManMenu(username);
+            }
+            else if (strcmp(buffer,"Admin") == 0){
+                memset(buffer, 0, sizeof(buffer)); 
+                displayAdminMenu(username);
+            }
+
+            
+
+            break;
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
         }
 
         printf("Do you want to try logging in again? (y/n): ");

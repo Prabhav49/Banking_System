@@ -620,4 +620,10 @@ void viewCustTrans() {
     }
 
     fclose(file);
+<<<<<<< HEAD
 }
+=======
+}
+
+
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda

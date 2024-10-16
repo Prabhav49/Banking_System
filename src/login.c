@@ -4,9 +4,41 @@
 #include <fcntl.h>
 #include "banking.h"
 
+<<<<<<< HEAD
 #define MAX_USERS 100
 
 // Function to load users from the users.db file
+=======
+const char* authenticate(const char *username, const char *password, User users[], int userCount) {
+    static char msg[50];
+    int usernameFound = 0;
+
+    for (int i = 0; i < userCount; i++) {
+        if (strcmp(users[i].username, username) == 0) {
+            usernameFound = 1;  // Username exists
+            if (strcmp(users[i].password, password) == 0) {
+                // Password matches, now check account status
+                if (users[i].active == 1) {
+                    strcpy(msg, "Login Successful!");
+                } else {
+                    strcpy(msg, "Login Failed! Account is inactive.");
+                }
+            } else {
+                // Username exists but password is incorrect
+                strcpy(msg, "Password is incorrect.");
+            }
+            return msg;
+        }
+    }
+
+    // Username not found
+    if (!usernameFound) {
+        strcpy(msg, "Username does not exist.");
+    }
+
+    return msg;
+}
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
 void loadUsers(User users[], int *userCount) {
     FILE *file = fopen("../db/users.db", "rb");
     if (!file) {
