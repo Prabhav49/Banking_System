@@ -4,22 +4,9 @@
 #include <fcntl.h>
 #include "banking.h"
 
-const char* authenticate(const char *username, const char *password, User users[], int userCount) {
-    static char msg[50];
+#define MAX_USERS 100
 
-    for (int i = 0; i < userCount; i++) {
-        if (strcmp(users[i].username, username) == 0 && strcmp(users[i].password, password) == 0) {
-            if (users[i].active == 1) {
-                strcpy(msg, "Login Successful!");
-            } else {
-                strcpy(msg, "Login Failed! Account is inactive.");
-            }
-            return msg;
-        }
-    }
-    return "Login Failed!";
-}
-
+// Function to load users from the users.db file
 void loadUsers(User users[], int *userCount) {
     FILE *file = fopen("../db/users.db", "rb");
     if (!file) {
@@ -31,6 +18,88 @@ void loadUsers(User users[], int *userCount) {
     fclose(file);
 }
 
+// Function to save updated users to the users.db file
+void saveUsers(User users[], int userCount) {
+    FILE *file = fopen("../db/users.db", "wb");
+    if (!file) {
+        perror("Failed to open users.db for writing");
+        exit(EXIT_FAILURE);
+    }
+
+    fwrite(users, sizeof(User), userCount, file);
+    fclose(file);
+}
+
+// Function to authenticate a user, updating the isLogIn status if successful
+const char* authenticate(const char *username, const char *password, User users[], int userCount) {
+    static char msg[100];
+    int usernameFound = 0;
+
+    for (int i = 0; i < userCount; i++) {
+        if (strcmp(users[i].username, username) == 0) {
+            usernameFound = 1;  // Username exists
+            if (strcmp(users[i].password, password) == 0) {
+                // Password matches, now check account status
+                if (users[i].active == 1) {
+                    if(users[i].isLogIn == false){
+                        users[i].isLogIn = true;  // Mark user as logged in
+                        saveUsers(users, userCount);  // Save updated status to file
+                        strcpy(msg, "Login Successful!");
+                    }
+                    else{
+                        strcpy(msg, "Login Failed! User is already logged in.");
+                    }
+                } else {
+                    strcpy(msg, "Login Failed! Account is inactive.");
+                }
+            } else {
+                strcpy(msg, "Password is incorrect.");
+            }
+            return msg;
+        }
+    }
+
+    if (!usernameFound) {
+        strcpy(msg, "Username does not exist.");
+    }
+
+    return msg;
+}
+
+
+void logout(const char *username) {
+    
+    User users[MAX_USERS];
+    int userCount = 0;
+    int usernameFound = 0;
+
+    // Load users from the file
+    loadUsers(users, &userCount);
+
+    // Search for the user in the loaded data
+    for (int i = 0; i < userCount; i++) {
+        if (strcmp(users[i].username, username) == 0) {
+            usernameFound = 1;  // Username exists
+            if (users[i].isLogIn == true) {
+                users[i].isLogIn = false;  // Mark user as logged out
+                saveUsers(users, userCount);  // Save updated status to file
+                printf("%s Logged Out....\n",username);
+                return;
+            } else {
+                printf("%s is not logged in..\n",username);
+            }
+            return;
+        }
+    }
+
+    if (!usernameFound) {
+        printf("User not exist");
+    }
+
+    return;
+}
+
+// Function to check the role of a user
 const char* checkRole(const char *username, User users[], int userCount) {
     for (int i = 0; i < userCount; i++) {
         if (strcmp(users[i].username, username) == 0) {

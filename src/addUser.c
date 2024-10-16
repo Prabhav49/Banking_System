@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "banking.h"
+#include <stdbool.h>
 
 // Function to generate a unique user ID
 int generateUserId() {
@@ -25,7 +26,7 @@ int generateUserId() {
 }
 
 // Function to add a user to the database
-void addUser(const char *fullName, const char *username, const char *password, const char *role, double balance, int active) {
+void addUser(const char *fullName, const char *username, const char *password, const char *role, double balance, int active, bool  isLogIn) {
     User user;
     user.id = generateUserId(); // Generate a unique ID
     strncpy(user.fullName, fullName, sizeof(user.fullName) - 1);
@@ -34,6 +35,7 @@ void addUser(const char *fullName, const char *username, const char *password, c
     strncpy(user.role, role, sizeof(user.role) - 1);
     user.balance = balance;
     user.active = active;
+    user.isLogIn = false;
 
     // Open the database file in append mode
     FILE *file = fopen("../db/users.db", "ab"); // Open for appending in binary mode
@@ -54,6 +56,7 @@ int main() {
     char role[20];
     double balance;
     int active;
+    bool isLogIn;
 
     // Prompt for user information
     printf("Enter Full Name: ");
@@ -74,9 +77,11 @@ int main() {
 
     printf("Is the account active? (1 for Yes, 0 for No): ");
     scanf("%d", &active);
+    isLogIn = false;
+
 
     // Add the user to the database
-    addUser(fullName, username, password, role, balance, active);
+    addUser(fullName, username, password, role, balance, active,isLogIn);
 
     printf("User added successfully!\n");
 

@@ -10,33 +10,72 @@
 #include "transaction.h"
 #include "employee.h"
 #include "loan.h"
+#include "customer.h"
 
 #define MAX_PASSWORD_LENGTH 50
 #define USER_DB_PATH "../db/users.db"
 #define LOAN_DB_PATH "../db/loans.db" 
 
 
-void displayEmployeeMenu(const char *username) {
-    int choice;
+// void displayEmployeeMenu(const char *username) {
+//     int choice;
 
-    while (1) {
-        printf("\nEmployee Menu:\n");
-        printf("1. Add New Customer\n");
-        printf("2. Modify Customer Detail\n");
-        printf("3. Process Loan Application\n");
-        printf("4. Approve/Reject Loans\n");
-        printf("5. View Assigned Loan Applications\n");
-        printf("6. View Customer Transaction\n");
-        printf("7. Change Password\n");
-        printf("8. Logout\n");
-        printf("9. Exit\n");
-        printf("10. User Info\n");
-        printf("Enter your choice: ");
-        scanf("%d", &choice);
+//     while (1) {
+//         printf("\nEmployee Menu:\n");
+//         printf("1. Add New Customer\n");
+//         printf("2. Modify Customer Detail\n");
+//         printf("3. Process Loan Application\n");
+//         printf("4. Approve/Reject Loans\n");
+//         printf("5. View Assigned Loan Applications\n");
+//         printf("6. View Customer Transaction\n");
+//         printf("7. Change Password\n");
+//         printf("8. Logout\n");
+//         printf("9. Exit\n");
+//         printf("10. User Info\n");
+//         printf("Enter your choice: ");
+//         scanf("%d", &choice);
 
 
 
-        switch (choice) {
+//         switch (choice) {
+//             case 1:
+//                 addNewCustomer();
+//                 break;
+//             case 2:
+//                 modifyCustomerDetail();
+//                 break;
+//             case 3:
+//                 processLoanApplication(username);
+//                 break;
+//             case 4:
+//                 approveOrRejectLoanApp(username);
+//                 break;
+//             case 5:
+//                 viewAssignedLoans(username);
+//                 break;
+//             case 6:
+//                 viewCustTrans();
+//                 break;
+//             case 7:
+//                 changePassword(username);
+//                 break;
+//             case 8:
+//                 printf("Logging Out");
+//                 exit(0);
+//             case 9:
+//                 exit(0); 
+//             case 10:
+//                 userInfo(username); 
+//                 break;    
+//             default:
+//                 printf("Invalid choice! Please try again.\n");
+//         }
+//     }
+// }
+
+
+void empCase(const char*username, int choice){
+    switch (choice) {
             case 1:
                 addNewCustomer();
                 break;
@@ -56,7 +95,7 @@ void displayEmployeeMenu(const char *username) {
                 viewCustTrans();
                 break;
             case 7:
-                changeEmpPassword(username);
+                changePassword(username);
                 break;
             case 8:
                 printf("Logging Out");
@@ -64,12 +103,11 @@ void displayEmployeeMenu(const char *username) {
             case 9:
                 exit(0); 
             case 10:
-                empInfo(username); 
+                userInfo(username); 
                 break;    
             default:
                 printf("Invalid choice! Please try again.\n");
         }
-    }
 }
 
 int generateUserId() {
@@ -160,8 +198,7 @@ void addNewCustomer(){
     // printf("Enter Role (Customer/Employee): ");
     // scanf("%19s", role);
 
-    printf("Enter Balance: ");
-    scanf("%lf", &balance);
+    balance = 0.00;
 
     printf("Is the account active? (1 for Yes, 0 for No): ");
     scanf("%d", &active);
@@ -175,76 +212,347 @@ void addNewCustomer(){
 }
 
 void modifyCustomerDetail() {
+     User userRecord;
     char username[50];
-    User user;
     int found = 0;
 
-    // Prompt for the username to modify details
-    printf("Enter the username of the customer to modify: ");
-    scanf("%49s", username);
+    // Ask for the username whose details need to be modified
+    printf("Enter the username of the Customer to modify: ");
+    scanf("%s", username);
 
-    // Open the database file in read/write mode
-    FILE *file = fopen("../db/users.db", "r+b");
-    if (!file) {
-        perror("Failed to open users.db");
+    FILE *userFile = fopen(USER_DB_PATH, "rb+");  // Open file for reading and writing
+    if (userFile == NULL) {
+        printf("Error: Could not open user database.\n");
         return;
     }
 
-    // Search for the user in the database
-    while (fread(&user, sizeof(User), 1, file)) {
-        if (strcmp(user.username, username) == 0) {
+    // Loop through the user database to find the matching username
+    while (fread(&userRecord, sizeof(User), 1, userFile)) {
+        if (strcmp(userRecord.username, username) == 0) {
+            if (strcmp(userRecord.role, "Employee") == 0 || strcmp(userRecord.role, "Manager") == 0 || strcmp(userRecord.role, "Admin") == 0)  {
+                printf("Error: You cannot modify the details of an Employee/Manager/Admin user.\n");
+                fclose(userFile);
+                return;
+            }
+
             found = 1;
+
+            // Display current information of the customer/employee
+            printf("\nCurrent Information for Username: %s\n", userRecord.username);
+            printf("Full Name: %s\n", userRecord.fullName);
+            printf("Role: %s\n", userRecord.role);
+            printf("Balance: %.2f\n", userRecord.balance);
+            printf("Account Status: %s\n", userRecord.active ? "Active" : "Inactive");
+            printf("-------------------------------------\n");
+
+            // Ask which details to modify (without balance modification)
+            char choice;
+            printf("Do you want to modify the full name? (y/n): ");
+            scanf(" %c", &choice);
+            if (choice == 'y' || choice == 'Y') {
+                printf("Enter new full name: ");
+                getchar();  // Consume leftover newline character
+                fgets(userRecord.fullName, sizeof(userRecord.fullName), stdin);
+                userRecord.fullName[strcspn(userRecord.fullName, "\n")] = '\0';  // Remove newline
+            }
+
+            printf("Do you want to modify the password? (y/n): ");
+            scanf(" %c", &choice);
+            if (choice == 'y' || choice == 'Y') {
+                printf("Enter new password: ");
+                scanf("%s", userRecord.password);
+            }
+
+            printf("Do you want to change the account status? (1 for active, 0 for inactive): ");
+            scanf("%d", &userRecord.active);
+
+            // Move the file pointer back by one record to overwrite the current record
+            fseek(userFile, -sizeof(User), SEEK_CUR);
+            fwrite(&userRecord, sizeof(User), 1, userFile);
+            fflush(userFile);
+
+            printf("Details updated successfully for username: %s\n", username);
             break;
         }
     }
 
-    // If user is found, prompt for details to modify
-    if (found) {
-        printf("User found. You can modify the following details:\n");
-
-        // Modify Full Name
-        printf("Enter new Full Name (currently: %s): ", user.fullName);
-        getchar();  // To clear newline from previous input
-        fgets(user.fullName, sizeof(user.fullName), stdin);
-        user.fullName[strcspn(user.fullName, "\n")] = 0; // Remove trailing newline
-
-        // Modify Password
-        printf("Enter new Password (currently: %s): ", user.password);
-        scanf("%49s", user.password);
-
-        // Modify Balance
-        printf("Enter new Balance (currently: %.2f): ", user.balance);
-        scanf("%lf", &user.balance);
-
-        // Modify Account Status
-        printf("Is the account active? (currently: %d, 1 for Yes, 0 for No): ", user.active);
-        scanf("%d", &user.active);
-
-        // Move file pointer to the start of the current user record
-        fseek(file, -sizeof(User), SEEK_CUR);
-
-        // Update the user details in the file
-        fwrite(&user, sizeof(User), 1, file);
-
-        printf("Customer details updated successfully!\n");
-    } else {
-        printf("Error: User with username '%s' not found.\n", username);
+    if (!found) {
+        printf("Error: Username '%s' not found.\n", username);
     }
 
-    // Close the file
-    fclose(file);
+    fclose(userFile);
 }
 
 
-void processLoanApplication(const char *username){
-    printf("Yet to implement");
-}
+void processLoanApplication(const char *username) {
+    User userRecord;
+    Loan loanRecord;
+    char employeeId[30]; // To store the assigned employee's ID
+    int found = 0; // To check if the employee was found
+    int loanToProcess;
+    double newInterestRate;
+    int newDuration;
 
-void approveOrRejectLoanApp(const char *username){
-    printf("Yet to implement");
+    // Step 1: Find the employee ID based on the username from the user database
+    FILE *userFile = fopen(USER_DB_PATH, "rb");
+    if (userFile == NULL) {
+        printf("Error: Could not open users database.\n");
+        return;
+    }
+
+    while (fread(&userRecord, sizeof(User), 1, userFile)) {
+        if (strcmp(userRecord.username, username) == 0 && strcmp(userRecord.role, "Employee") == 0) {
+            // Convert employee ID to string format
+            sprintf(employeeId, "%d", userRecord.id); // Store the ID as a string
+            found = 1;
+            break;
+        }
+    }
+    fclose(userFile);
+
+    if (!found) {
+        printf("Error: Employee with username '%s' not found or is not an employee.\n", username);
+        return;
+    }
+
+    // Step 2: Process loans assigned to this employee
+    FILE *loanFile = fopen(LOAN_DB_PATH, "rb+");
+    if (loanFile == NULL) {
+        printf("Error: Could not open loan database.\n");
+        return;
+    }
+
+    // Display header for the table
+    printf("Loans Assigned to Employee (ID: %s) for Processing:\n", employeeId);
+    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+    printf("| Loan ID |    Loan Amount  |   Status   |  Duration  |  Interest Rate  |  Username     |  User ID                |\n");
+    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+
+    // Loop through loans and find ones with "Processing" status and assigned to this employee
+    found = 0;  // Reset found flag
+    while (fread(&loanRecord, sizeof(Loan), 1, loanFile)) {
+        if (strcmp(loanRecord.assignedEmployeeId, employeeId) == 0 && strcmp(loanRecord.status, "Processing") == 0) {
+            printf("| %7d | %15.2lf | %10s | %10d | %15.2f%% | %13s | %23s |\n",
+                   loanRecord.loanId,
+                   loanRecord.loanAmount,
+                   loanRecord.status,
+                   loanRecord.durationMonths,
+                   loanRecord.interestRate,
+                   loanRecord.username,
+                   loanRecord.userId);
+            found = 1;
+        }
+    }
+    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+
+    if (!found) {
+        printf("No loans in 'Processing' status assigned to you.\n");
+        fclose(loanFile);
+        return;
+    }
+
+    // Ask for the loan ID to process
+    printf("Enter the Loan ID you want to process: ");
+    scanf("%d", &loanToProcess);
+
+    // Rewind the file pointer to start from the beginning
+    rewind(loanFile);
+
+    // Search for the loan by ID and assigned employee ID
+    while (fread(&loanRecord, sizeof(Loan), 1, loanFile)) {
+        if (loanRecord.loanId == loanToProcess && strcmp(loanRecord.assignedEmployeeId, employeeId) == 0) {
+            // Ask for new interest rate and duration
+            printf("Enter new interest rate: ");
+            scanf("%lf", &newInterestRate);
+            printf("Enter new duration (in months): ");
+            scanf("%d", &newDuration);
+
+            // Update loan details
+            loanRecord.interestRate = newInterestRate;
+            loanRecord.durationMonths = newDuration;
+
+            // Move the file pointer back by one record to overwrite the current loan record
+            fseek(loanFile, -sizeof(Loan), SEEK_CUR);
+            fwrite(&loanRecord, sizeof(Loan), 1, loanFile);
+            fflush(loanFile);
+
+            printf("Loan ID %d has been updated. Status remains: Processing.\n", loanToProcess);
+            fclose(loanFile);
+            return;
+        }
+    }
+
+    // If loan ID was not found
+    printf("Loan ID %d not found or not assigned to you.\n", loanToProcess);
+    fclose(loanFile);
 }
-void viewAssignedLoans(const char *username){
-    printf("Yet to implement");
+void approveOrRejectLoanApp(const char *username) {
+    Loan loanRecord;
+    char employeeId[30]; // To store the assigned employee's ID
+    int found = 0; // To check if any loans are found
+    int loanToProcess;
+
+    // Step 1: Find the employee ID based on the username from the user database
+    User userRecord;
+    FILE *userFile = fopen(USER_DB_PATH, "rb");
+    if (userFile == NULL) {
+        printf("Error: Could not open users database.\n");
+        return;
+    }
+
+    while (fread(&userRecord, sizeof(User), 1, userFile)) {
+        if (strcmp(userRecord.username, username) == 0 && strcmp(userRecord.role, "Employee") == 0) {
+            sprintf(employeeId, "%d", userRecord.id); // Store the ID as a string
+            found = 1;
+            break;
+        }
+    }
+    fclose(userFile);
+
+    if (!found) {
+        printf("Error: Employee with username '%s' not found or is not an employee.\n", username);
+        return;
+    }
+
+    // Step 2: Process loans assigned to this employee
+    FILE *loanFile = fopen(LOAN_DB_PATH, "rb+");
+    if (loanFile == NULL) {
+        printf("Error: Could not open loan database.\n");
+        return;
+    }
+
+    // Display header for the table
+    printf("Loans Assigned to Employee (ID: %s) for Approval/Rejection:\n", employeeId);
+    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+    printf("| Loan ID |    Loan Amount  |   Status   |  Duration  |  Interest Rate  |  Username     |  User ID                |\n");
+    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+
+    // Loop through loans and find ones with "Processing" status and assigned to this employee
+    found = 0;  // Reset found flag
+    while (fread(&loanRecord, sizeof(Loan), 1, loanFile)) {
+        if (strcmp(loanRecord.assignedEmployeeId, employeeId) == 0 && strcmp(loanRecord.status, "Processing") == 0) {
+            printf("| %7d | %15.2lf | %10s | %10d | %15.2f%% | %13s | %23s |\n",
+                   loanRecord.loanId,
+                   loanRecord.loanAmount,
+                   loanRecord.status,
+                   loanRecord.durationMonths,
+                   loanRecord.interestRate,
+                   loanRecord.username,
+                   loanRecord.userId);
+            found = 1;
+        }
+    }
+    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+
+    if (!found) {
+        printf("No loans in 'Processing' status assigned to you.\n");
+        fclose(loanFile);
+        return;
+    }
+
+    // Ask for the loan ID to approve or reject
+    printf("Enter the Loan ID you want to process: ");
+    scanf("%d", &loanToProcess);
+
+    // Rewind the file pointer to start from the beginning
+    rewind(loanFile);
+
+    // Search for the loan by ID and assigned employee ID
+    while (fread(&loanRecord, sizeof(Loan), 1, loanFile)) {
+        if (loanRecord.loanId == loanToProcess && strcmp(loanRecord.assignedEmployeeId, employeeId) == 0) {
+            int decision;
+            printf("Enter 1 to Approve or 0 to Reject the loan (ID: %d): ", loanToProcess);
+            scanf("%d", &decision);
+
+            // Update loan status based on the decision
+            if (decision == 1) {
+                strcpy(loanRecord.status, "Approved");
+                printf("Loan ID %d has been approved.\n", loanToProcess);
+            } else if (decision == 0) {
+                strcpy(loanRecord.status, "Rejected");
+                printf("Loan ID %d has been rejected.\n", loanToProcess);
+            } else {
+                printf("Invalid input. Please enter 1 or 0.\n");
+                fclose(loanFile);
+                return;
+            }
+
+            // Move the file pointer back by one record to overwrite the current loan record
+            fseek(loanFile, -sizeof(Loan), SEEK_CUR);
+            fwrite(&loanRecord, sizeof(Loan), 1, loanFile);
+            fflush(loanFile);
+            fclose(loanFile);
+            return;
+        }
+    }
+
+    // If loan ID was not found
+    printf("Loan ID %d not found or not assigned to you.\n", loanToProcess);
+    fclose(loanFile);
+}
+void viewAssignedLoans(const char *username) {
+    Loan loanRecord;
+    char employeeId[30]; // To store the assigned employee's ID
+    int found = 0; // To check if loans are found for this employee
+
+    // Step 1: Find the employee ID based on the username from the user database
+    User userRecord;
+    FILE *userFile = fopen(USER_DB_PATH, "rb");
+    if (userFile == NULL) {
+        printf("Error: Could not open users database.\n");
+        return;
+    }
+
+    while (fread(&userRecord, sizeof(User), 1, userFile)) {
+        if (strcmp(userRecord.username, username) == 0 && strcmp(userRecord.role, "Employee") == 0) {
+            sprintf(employeeId, "%d", userRecord.id); // Store the employee ID as a string
+            found = 1;
+            break;
+        }
+    }
+    fclose(userFile);
+
+    if (!found) {
+        printf("Error: Employee with username '%s' not found or is not an employee.\n", username);
+        return;
+    }
+
+    // Step 2: Open the loan database and display all loans assigned to this employee
+    FILE *loanFile = fopen(LOAN_DB_PATH, "rb");
+    if (loanFile == NULL) {
+        printf("Error: Could not open loan database.\n");
+        return;
+    }
+
+    // Display header for the table
+    printf("Loans Assigned to Employee (ID: %s):\n", employeeId);
+    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+----------------+\n");
+    printf("| Loan ID |    Loan Amount  |   Status   |  Duration  |  Interest Rate  |  Username     |  User ID                | Assigned Emp ID |\n");
+    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+----------------+\n");
+
+    // Loop through loans and display those assigned to this employee, regardless of status
+    found = 0; // Reset the found flag
+    while (fread(&loanRecord, sizeof(Loan), 1, loanFile)) {
+        if (strcmp(loanRecord.assignedEmployeeId, employeeId) == 0) {
+            printf("| %7d | %15.2lf | %10s | %10d | %15.2f%% | %13s | %23s | %14s |\n",
+                   loanRecord.loanId,
+                   loanRecord.loanAmount,
+                   loanRecord.status,
+                   loanRecord.durationMonths,
+                   loanRecord.interestRate,
+                   loanRecord.username,
+                   loanRecord.userId,
+                   loanRecord.assignedEmployeeId);
+            found = 1;
+        }
+    }
+    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+----------------+\n");
+
+    if (!found) {
+        printf("No loans assigned to you.\n");
+    }
+
+    fclose(loanFile);
 }
 
 void viewCustTrans() {
@@ -312,108 +620,4 @@ void viewCustTrans() {
     }
 
     fclose(file);
-}
-
-
-void changeEmpPassword(const char *username){
-    char currentPassword[MAX_PASSWORD_LENGTH];
-    char newPassword[MAX_PASSWORD_LENGTH];
-    char confirmPassword[MAX_PASSWORD_LENGTH];
-    FILE *file = fopen(USER_DB_PATH, "r+b");
-    if (!file) {
-        perror("Failed to open database");
-        return;
-    }
-
-    User user;
-    int found = 0;
-
-    while (fread(&user, sizeof(User), 1, file)) {
-        if (strcmp(user.username, username) == 0) {
-            found = 1; // User found
-            break;
-        }
-    }
-    if (!found) {
-        printf("User not found.\n");
-        fclose(file);
-        return;
-    }
-
-    printf("Enter current password: ");
-    scanf("%s", currentPassword);
-
-    // Validate the current password
-    if (strcmp(user.password, currentPassword) != 0) {
-        printf("Incorrect current password.\n");
-        fclose(file);
-        return;
-    }
-
-    printf("Enter new password: ");
-    scanf("%s", newPassword);
-    printf("Confirm new password: ");
-    scanf("%s", confirmPassword);
-
-    // Check if the new password and confirmation match
-    if (strcmp(newPassword, confirmPassword) != 0) {
-        printf("New passwords do not match.\n");
-        fclose(file);
-        return;
-    }
-
-    // Check if new password is valid 
-    if (strlen(newPassword) < 6) { 
-        printf("New password must be at least 6 characters long.\n");
-        fclose(file);
-        return;
-    }
-
-    // Update the password in the user record
-    strcpy(user.password, newPassword);
-    fseek(file, -sizeof(User), SEEK_CUR); 
-    size_t written = fwrite(&user, sizeof(User), 1, file); 
-    // Check if the write was successful
-    if (written != 1) {
-        printf("Failed to update password in the database. Write returned: %zu\n", written);
-    } else {
-        printf("Password changed successfully.\n");
-    }
-
-    fclose(file);
-}
-
-
-void empInfo(const char *username){
-    FILE *file = fopen("../db/users.db", "r");
-    if (!file) {
-        perror("Failed to open database");
-        return;
-    }
-
-    User user;
-    int found = 0;
-
-    // Read each user from the database
-    while (fread(&user, sizeof(User), 1, file)) {
-        if (strcmp(user.username, username) == 0) {
-            found = 1; 
-            break;   
-        }
-    }
-
-    fclose(file);
-
-    // Print user information if found
-    if (found) {
-        printf("User Information:\n");
-        printf("ID: %d\n", user.id);
-        printf("Name: %s\n", user.fullName);
-        printf("Username: %s\n", user.username);
-        printf("Role: %s\n", user.role);
-        printf("Balance: %.2f\n", user.balance);
-        printf("Account Status: %s\n", user.active ? "Active" : "Inactive");
-    } else {
-        printf("User not found.\n");
-    }
 }

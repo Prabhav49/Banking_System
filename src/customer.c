@@ -9,7 +9,9 @@
 #include <time.h>
 #include "transaction.h"
 #include "loan.h"
+#include "feed.h"
 
+#define FEEDBACK_DB_PATH "../db/feed.db"
 #define MAX_PASSWORD_LENGTH 50
 #define USER_DB_PATH "../db/users.db"
 #define LOAN_DB_PATH "../db/loans.db"
@@ -17,27 +19,74 @@
 #define DB_PATH "../db/users.db"
 
 
-void displayCustomerMenu(const char *username) {
-    int choice;
+// void displayCustomerMenu(const char *username) {
+//     int choice;
 
-    while (1) {
-        printf("\nCustomer Menu:\n");
-        printf("1. View Account Balance\n");
-        printf("2. Deposit Money\n");
-        printf("3. Withdraw Money\n");
-        printf("4. Transfer Funds\n");
-        printf("5. Apply For a Loan\n");
-        printf("6. Check Loan Status\n");
-        printf("7. Add Feedback\n");
-        printf("8. View Transaction History\n");
-        printf("9. Change Password\n");
-        printf("10. Logout\n");
-        printf("11. Exit\n");
-        printf("12. User Info\n");
-        printf("Enter your choice: ");
-        scanf("%d", &choice);
+//     while (1) {
+//         printf("\nCustomer Menu:\n");
+//         printf("1. View Account Balance\n");
+//         printf("2. Deposit Money\n");
+//         printf("3. Withdraw Money\n");
+//         printf("4. Transfer Funds\n");
+//         printf("5. Apply For a Loan\n");
+//         printf("6. Check Loan Status\n");
+//         printf("7. Add Feedback\n");
+//         printf("8. View Transaction History\n");
+//         printf("9. Change Password\n");
+//         printf("10. Check Feedback Status\n");
+//         printf("11. Logout\n");
+//         printf("12. Exit\n");
+//         printf("13. User Info\n");
+//         printf("Enter your choice: ");
+//         scanf("%d", &choice);
 
-        switch (choice) {
+//         switch (choice) {
+//             case 1:
+//                 viewAccountBalance(username);
+//                 break;
+//             case 2:
+//                 depositMoney(username);
+//                 break;
+//             case 3:
+//                 withdrawMoney(username);
+//                 break;
+//             case 4:
+//                 transferFunds(username);
+//                 break;
+//             case 5:
+//                 applyForLoan(username);
+//                 break;
+//             case 6:
+//                 checkLoanStatus(username);
+//                 break;
+//             case 7:
+//                 addFeedback(username);
+//                 break;
+//             case 8:
+//                 viewTransactionHistory(username);
+//                 break;
+//             case 9:
+//                 changePassword(username);
+//                 break;    
+//             case 10:
+//                 checkFeedBackStatus(username);
+//                 break;
+//             case 11:
+//                 printf("logging out");
+//                 exit(0);
+//             case 12:
+//                 exit(0);  
+//             case 13:
+//                 userInfo(username);
+//                 break;   
+//             default:
+//                 printf("Invalid choice! Please try again.\n");
+//         }
+//     }
+// }
+
+void customerCase(const char* username,int choice){
+    switch (choice) {
             case 1:
                 viewAccountBalance(username);
                 break;
@@ -66,17 +115,19 @@ void displayCustomerMenu(const char *username) {
                 changePassword(username);
                 break;    
             case 10:
-                exit(0);
-                return; 
+                checkFeedBackStatus(username);
+                break;
             case 11:
+                printf("logging out");
                 exit(0);
             case 12:
-                userInfo(username);  
-                break;  
+                exit(0);  
+            case 13:
+                userInfo(username);
+                break;   
             default:
                 printf("Invalid choice! Please try again.\n");
         }
-    }
 }
 
 int generateTransactionId() {
@@ -399,70 +450,88 @@ void viewTransactionHistory(const char *username) {
     fclose(file);
 }
 
+int getNextLoanId() {
+    FILE *file = fopen(LOAN_DB_PATH, "rb");
+    if (!file) {
+        return 1; 
+    }
+    
+    Loan loan;
+    int maxId = 0;
+
+    while (fread(&loan, sizeof(Loan), 1, file)) {
+        if (loan.loanId > maxId) {
+            maxId = loan.loanId;
+        }
+    }
+
+    fclose(file);
+    return maxId + 1; 
+}
+
 void applyForLoan(const char *username) {
     Loan newLoan;
-    strcpy(newLoan.username, username);
+
+    newLoan.loanId = getNextLoanId();
     
-    // Simulate user input for loan amount only
+    strcpy(newLoan.username, username);
     printf("Enter loan amount: ");
     scanf("%lf", &newLoan.loanAmount);
     
-    // Other fields will be handled by the manager later
-    strcpy(newLoan.userId, "");              // To be filled by the manager
-    newLoan.interestRate = 0.0;              // To be determined by the manager
-    newLoan.durationMonths = 0;              // To be decided by the manager
-    strcpy(newLoan.status, "Pending");       // Initial status is "Pending"
-    strcpy(newLoan.assignedEmployeeId, "");  // To be assigned by the manager
+    // Set default values for other fields             
+    newLoan.interestRate = 0.0;             
+    newLoan.durationMonths = 0;               
+    strcpy(newLoan.status, "Pending");       
+    strcpy(newLoan.assignedEmployeeId, ""); 
+    strcpy(newLoan.userId,username);
     
-    // Open loan database file in append mode
-    FILE *file = fopen(LOAN_DB_PATH, "a");
+    // Open the loan database file in append mode
+    FILE *file = fopen(LOAN_DB_PATH, "ab");
     if (file == NULL) {
         printf("Error: Could not open loan database.\n");
         return;
     }
     
-    // Write the new loan details to the file
+    // Write the new loan to the file
     fwrite(&newLoan, sizeof(Loan), 1, file);
     fclose(file);
     
-    printf("Loan application submitted successfully. Status: Pending\n");
+    printf("Loan application submitted successfully. Loan ID: %d, Status: Pending\n", newLoan.loanId);
 }
-
 void checkLoanStatus(const char *username) {
     Loan loanRecord;
-    int found = 0; 
-    
+    int found = 0;
+
     FILE *file = fopen(LOAN_DB_PATH, "r");
     if (file == NULL) {
         printf("Error: Could not open loan database.\n");
         return;
     }
 
-     // Table header
-    printf("+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
-    printf("|    Loan Amount  |   Status   |  Duration  |  Interest Rate  | Assigned Emp  |         User ID          |\n");
-    printf("+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+    // Table header with Loan ID
+    printf("+-------------+-----------------+------------+------------+-----------------+---------------+----------------+\n");
+    printf("| Loan ID     |    Loan Amount  |   Status   |  Duration  |  Interest Rate  | Assigned Emp  |     User ID    |\n");
+    printf("+-------------+-----------------+------------+------------+-----------------+---------------+----------------+\n");
 
     // Search through all loan records for the given username
     while (fread(&loanRecord, sizeof(Loan), 1, file)) {
-        if (strcmp(loanRecord.username, username) == 0) {
-            printf("| %15.2lf | %10s | %10d | %15.2f%% | %13s | %23s |\n",
+        if (strcmp(loanRecord.userId, username) == 0) {
+            printf("| %7d | %15.2lf | %10s | %10d | %15.2f%% | %13s | %23s |\n",
+                   loanRecord.loanId,
                    loanRecord.loanAmount,
                    loanRecord.status,
                    loanRecord.durationMonths,
                    loanRecord.interestRate,
-                   loanRecord.assignedEmployeeId[0] == '\0' ? "N/A" : loanRecord.assignedEmployeeId, // Show N/A if not assigned
+                   loanRecord.assignedEmployeeId[0] == '\0' ? "N/A" : loanRecord.assignedEmployeeId,  // Show N/A if not assigned
                    loanRecord.userId[0] == '\0' ? "N/A" : loanRecord.userId); // Show N/A if not assigned
             found = 1;
         }
     }
+    printf("+-------------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
 
-    // Table footer
-    printf("+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
-    
-    
+
     fclose(file);
-    
+
     if (!found) {
         printf("No loan application found for user: %s\n", username);
     }
@@ -538,11 +607,89 @@ void changePassword(const char *username) {
 
 
 
-void addFeedback(const char *username) {
-    // Logic for adding feedback (update database)
-    printf("Add Feedback functionality not yet implemented.\n");
+void getCurrentTimestamp(char *buffer, size_t bufferSize) {
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    strftime(buffer, bufferSize, "%Y-%m-%d %H:%M:%S", t);
 }
 
+void addFeedback(const char *username) {
+    Feedback feedbackRecord;
+    FILE *feedFile = fopen(FEEDBACK_DB_PATH, "ab");
+
+    if (feedFile == NULL) {
+        printf("Error: Could not open feedback database.\n");
+        return;
+    }
+
+    // Assign a new feedback number (increment from the last one in the file)
+    fseek(feedFile, 0, SEEK_END);
+    long fileSize = ftell(feedFile);
+    if (fileSize == 0) {
+        feedbackRecord.feedNo = 1;  // First feedback
+    } else {
+        fseek(feedFile, -sizeof(Feedback), SEEK_END);
+        fread(&feedbackRecord, sizeof(Feedback), 1, feedFile);
+        feedbackRecord.feedNo += 1;  // Increment feedback number
+    }
+
+    // Set feedback details
+    strcpy(feedbackRecord.username, username);
+    
+    // Ask user to enter feedback
+    printf("Enter your feedback (2-3 sentences):\n");
+    getchar();  // Consume newline left by previous input
+    fgets(feedbackRecord.feedback, 300, stdin);
+    
+    // Set default status and time details
+    strcpy(feedbackRecord.status, "Not Seen");
+    
+    // Get the current timestamp
+    time_t now = time(NULL);
+    strftime(feedbackRecord.feedbackTime, sizeof(feedbackRecord.feedbackTime), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    
+    // Set initial status update time as N/A
+    strcpy(feedbackRecord.statusUpdateTime, "N/A");
+
+    // Write the feedback record to the file
+    fwrite(&feedbackRecord, sizeof(Feedback), 1, feedFile);
+    fflush(feedFile);
+    
+    printf("Your feedback has been recorded with feedback number: %d\n", feedbackRecord.feedNo);
+    fclose(feedFile);
+}
+
+void checkFeedBackStatus(const char* username) {
+    Feedback feedbackRecord;
+    int found = 0;  // To track if feedback from the user is found
+    
+    // Open the feedback database file
+    FILE *feedFile = fopen(FEEDBACK_DB_PATH, "rb");
+    if (feedFile == NULL) {
+        printf("Error: Could not open feedback database.\n");
+        return;
+    }
+
+while (fread(&feedbackRecord, sizeof(Feedback), 1, feedFile)) {
+        if (strcmp(feedbackRecord.username, username) == 0) {
+            found = 1;  // Set found flag if feedback for the user is found
+            
+            // Print the feedback details in a line-by-line format
+            printf("---------------------------------------------------------------------------\n");
+            printf("\nFeedback No: %d\n", feedbackRecord.feedNo);
+            printf("Feedback: %s\n", feedbackRecord.feedback);
+            printf("Status: %s\n", feedbackRecord.status);
+            printf("Feedback Time: %s\n", feedbackRecord.feedbackTime);
+            printf("Status Update Time: %s\n\n", feedbackRecord.statusUpdateTime);
+            printf("---------------------------------------------------------------------------\n");
+        }
+    }
+    if (!found) {
+        printf("No feedback records found for user: %s\n", username);
+    }
+
+    fclose(feedFile);
+}
 void userInfo(const char *username){
     FILE *file = fopen("../db/users.db", "r");
     if (!file) {
@@ -578,4 +725,3 @@ void userInfo(const char *username){
         printf("User not found.\n");
     }
 }
-
