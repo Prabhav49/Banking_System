@@ -44,23 +44,23 @@ const char* authenticate(const char *username, const char *password, User users[
                     if(users[i].isLogIn == false){
                         users[i].isLogIn = true;  // Mark user as logged in
                         saveUsers(users, userCount);  // Save updated status to file
-                        strcpy(msg, "Login Successful!");
+                        strcpy(msg, "Login Successful!\n");
                     }
                     else{
-                        strcpy(msg, "Login Failed! User is already logged in.");
+                        strcpy(msg, "Login Failed! User is already logged in.\n");
                     }
                 } else {
-                    strcpy(msg, "Login Failed! Account is inactive.");
+                    strcpy(msg, "Login Failed! Account is inactive.\n");
                 }
             } else {
-                strcpy(msg, "Password is incorrect.");
+                strcpy(msg, "Password is incorrect.\n");
             }
             return msg;
         }
     }
 
     if (!usernameFound) {
-        strcpy(msg, "Username does not exist.");
+        strcpy(msg, "Username does not exist.\n");
     }
 
     return msg;

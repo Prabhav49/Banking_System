@@ -3,199 +3,106 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <sys/wait.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 #include "banking.h"
-#include "menu.h"
-#include "customer.h"
 
-void handleClient(int connfd);
+#define PORT 8080
+#define BACKLOG 5 // Number of clients that can queue for connections
 
-int main() {
-    int sockfd, connfd;
-    struct sockaddr_in servaddr, cli;
-    int opt = 1;
+void handle_client(int client_socket) {
+    char buffer[1024];
+    char username[1024];
+    char password[1024];
 
-    // Create socket
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-        perror("Socket creation failed");
-        exit(EXIT_FAILURE);
-    }
-    printf("Socket successfully created\n");
-
-    // Set socket options
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) != 0) {
-        perror("setsockopt failed");
-        exit(EXIT_FAILURE);
-    }
-
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = INADDR_ANY;
-    servaddr.sin_port = htons(PORT);
-
-    // Bind the socket
-    if (bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
-        perror("Socket bind failed");
-        exit(EXIT_FAILURE);
-    }
-    printf("Socket successfully bound\n");
-
-    // Listen for connections
-    if (listen(sockfd, 5) != 0) {
-        perror("Listen failed");
-        exit(EXIT_FAILURE);
-    }
-    printf("Server listening\n");
-
-    socklen_t len = sizeof(cli);
-
-    // Server loop to accept multiple clients
-    while (1) {
-        connfd = accept(sockfd, (struct sockaddr*)&cli, &len);
-        if (connfd < 0) {
-            perror("Server accept failed");
-            continue;
-        }
-        printf("Server accepted the client\n");
-
-        // Fork a new process to handle the client
-        pid_t pid = fork();
-        if (pid == 0) {
-            close(sockfd); 
-            handleClient(connfd); 
-            close(connfd); 
-            exit(0);
-        } else if (pid > 0) { 
-            close(connfd); 
-            waitpid(-1, NULL, WNOHANG);
-        } else {
-            perror("Fork failed");
-            close(connfd);
-        }
-    }
-
-    close(sockfd);
-    return 0;
-}
-
-void handleClient(int connfd) {
     User users[MAX_USERS];
     int userCount = 0;
     loadUsers(users, &userCount);
 
-    char username[50], password[50];
-    int loginAttempts = 0;
-    char retryChoice[2]; // For storing 'y' or 'n'
+    // Wait for the client's username response
+    memset(username, 0, sizeof(username));
+    int bytes_read = read(client_socket, username, sizeof(username) - 1);
+    if (bytes_read <= 0) {
+        printf("Client disconnected while sending username.\n");
+        close(client_socket);
+        return;
+    }
+    username[bytes_read] = '\0';  // Properly null-terminate the string
+    printf("Client sent Username: %s\n", username);  // Print Username immediately
 
-    while (loginAttempts < 3) {
-        const char *usernamePrompt = "Enter username: ";
-        if (send(connfd, usernamePrompt, strlen(usernamePrompt) + 1, 0) <= 0) {
-            perror("Error sending username prompt");
-            close(connfd);
-            return;
+    // Wait for the client's password response
+    memset(password, 0, sizeof(password));
+    bytes_read = read(client_socket, password, sizeof(password) - 1);
+    if (bytes_read <= 0) {
+        printf("Client disconnected while sending password.\n");
+        close(client_socket);
+        return;
+    }
+    password[bytes_read] = '\0';  // Properly null-terminate the string
+    printf("Client sent Password: %s\n", password);  // Print Password immediately
+
+    // Authenticate user and send the result back to client
+    const char* auth_msg = authenticate(username, password, users, userCount);
+    write(client_socket, auth_msg, strlen(auth_msg));  // Send the auth message to the client
+
+    close(client_socket);  // Close the client socket after handling
+}
+
+int main() {
+    int server_socket, client_socket;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t addr_size;
+
+    // Create a socket (IPv4, TCP)
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket == -1) {
+        perror("Socket creation failed");
+        exit(1);
+    }
+
+    // Define the server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT); // Port number
+    server_addr.sin_addr.s_addr = INADDR_ANY; // Accept any incoming connection
+
+    // Bind the socket to the specified IP and port
+    if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+        perror("Bind failed");
+        close(server_socket);
+        exit(1);
+    }
+
+    // Start listening for connections (up to BACKLOG clients in the queue)
+    if (listen(server_socket, BACKLOG) == -1) {
+        perror("Listen failed");
+        close(server_socket);
+        exit(1);
+    }
+    
+    printf("Server is listening on port %d...\n", PORT);
+
+    // Infinite loop to accept and handle clients
+    while (1) {
+        addr_size = sizeof(client_addr);
+        client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &addr_size);
+        if (client_socket == -1) {
+            perror("Client connection failed");
+            continue;
         }
 
-        // Receive username
-        memset(username, 0, sizeof(username));
-        recv(connfd, username, sizeof(username), 0);
-
-        // Send password prompt
-        const char *passwordPrompt = "Enter password: ";
-        send(connfd, passwordPrompt, strlen(passwordPrompt) + 1, 0);
-
-        // Receive password
-        memset(password, 0, sizeof(password));
-        recv(connfd, password, sizeof(password), 0);
-
-        // Authenticate the user
-        const char *msg = authenticate(username, password, users, userCount);
-        send(connfd, msg, strlen(msg) + 1, 0);
-
-        // Check if login was successful
-        if (strcmp(msg, "Login Successful!") == 0) {
-            printf("%s logged in.\n", username);
-
-            // Send the role to the client
-            const char *role = checkRole(username, users, userCount);
-            if (send(connfd, role, strlen(role) + 1, 0) <= 0) {
-                perror("Error sending role");
-                close(connfd);
-                return;
-            }
-
-            // Send menu and process choice
-            char *menu = NULL;
-            do {
-                // Select the correct menu based on the role
-                if (strcmp(role, "Customer") == 0) {
-                    menu = getCustomerMenu();
-                } else if (strcmp(role, "Employee") == 0) {
-                    menu = getEmployeeMenu();
-                } else if (strcmp(role, "Manager") == 0) {
-                    menu = getManagerMenu();
-                } else if (strcmp(role, "Admin") == 0) {
-                    menu = getAdminMenu();
-                } else {
-                    menu = strdup("Invalid role");
-                }
-
-                // Send menu to client
-                if (send(connfd, menu, strlen(menu) + 1, 0) <= 0) {
-                    perror("Error sending menu");
-                    free(menu);
-                    close(connfd);
-                    return;
-                }
-
-                // Receive the user's choice
-                int choice;
-                if (recv(connfd, &choice, sizeof(choice), 0) <= 0) {
-                    perror("Error receiving choice");
-                    free(menu);
-                    close(connfd);
-                    return;
-                }
-
-                // Handle choice processing
-                printf("User %s made a choice: %d\n", username, choice);
-
-                free(menu);
-            } while (1);
-
-            return;
+        // Fork a new process to handle each client
+        if (fork() == 0) {
+            // Child process: handle client
+            close(server_socket); // Close the listening socket in the child process
+            handle_client(client_socket);
+            exit(0); // Exit the child process when done
         } else {
-            loginAttempts++;
-
-            // Check if the user has another attempt left
-            if (loginAttempts < 3) {
-                const char *retryMsg = "Login failed. Do you want to try logging in again? (y/n): ";
-                send(connfd, retryMsg, strlen(retryMsg) + 1, 0);
-
-                // Receive retry choice
-                memset(retryChoice, 0, sizeof(retryChoice));
-                recv(connfd, retryChoice, sizeof(retryChoice), 0);
-
-                // If the user chooses 'n', disconnect the client
-                if (strcmp(retryChoice, "n") == 0) {
-                    const char *exitMsg = "Goodbye!";
-                    send(connfd, exitMsg, strlen(exitMsg) + 1, 0);
-                    close(connfd);
-                    return;
-                } else if (strcmp(retryChoice, "y") != 0) {
-                    // If invalid input (anything other than 'y'), disconnect
-                    const char *invalidChoiceMsg = "Invalid choice. Disconnecting.";
-                    send(connfd, invalidChoiceMsg, strlen(invalidChoiceMsg) + 1, 0);
-                    close(connfd);
-                    return;
-                }
-            } else {
-                const char *failMsg = "Login failed 3 times. Disconnecting.";
-                send(connfd, failMsg, strlen(failMsg) + 1, 0);
-                close(connfd);
-                return;
-            }
+            // Parent process: continue to accept new clients
+            close(client_socket); // Close client socket in parent
         }
     }
 
-    close(connfd); // Close the connection after 3 failed attempts
+    close(server_socket);
+    return 0;
 }
