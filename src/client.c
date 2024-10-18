@@ -9,6 +9,7 @@
 #include "customer.h"
 #include "manager.h"
 #include "admin.h"
+<<<<<<< HEAD
 #include "employee.h"
 #include <stdbool.h>
 
@@ -141,6 +142,13 @@ void login_prompt(int client_socket) {
     }
 }
 
+=======
+<<<<<<< HEAD
+
+#define MAX_BUFFER 1024
+=======
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
+>>>>>>> 2e475b2db8a3364cdb5353b4c7ab08ce150de7cd
 
 int main() {
     int client_socket;
@@ -170,6 +178,122 @@ int main() {
     // Call login_prompt directly since we are not waiting for any server prompt
     login_prompt(client_socket);  // Handle username and password input
 
+<<<<<<< HEAD
     close(client_socket);
+=======
+        // Input username
+        scanf("%s", username);
+        send(sockfd, username, sizeof(username), 0);
+
+        // Receive password prompt from server
+        memset(buffer, 0, sizeof(buffer));
+        if (recv(sockfd, buffer, sizeof(buffer), 0) <= 0) {
+            perror("Error receiving password prompt");
+            close(sockfd);
+            exit(0);
+        }
+        printf("%s", buffer);
+
+        // Input password
+        scanf("%s", password);
+        send(sockfd, password, sizeof(password), 0);
+
+        // Receive login response from server
+        memset(buffer, 0, sizeof(buffer));
+        if (recv(sockfd, buffer, sizeof(buffer), 0) <= 0) {
+            perror("Error receiving login response");
+            close(sockfd);
+            exit(0);
+        }
+        printf("%s\n", buffer);
+
+        // Check if login is successful
+        if (strcmp(buffer, "Login Successful!") == 0) {
+            // Receive role from the server
+            memset(role, 0, sizeof(role));
+            if (recv(sockfd, role, sizeof(role), 0) <= 0) {
+                perror("Error receiving role");
+                close(sockfd);
+                exit(0);
+            }
+            printf("Logged in as: %s\n", role);
+
+            // Start menu interaction
+            while (1) {
+                char menu[MAX_BUFFER];
+                memset(menu, 0, sizeof(menu));
+
+                // Receive menu from the server
+                if (recv(sockfd, menu, sizeof(menu), 0) <= 0) {
+                    perror("Error receiving menu");
+                    close(sockfd);
+                    exit(0);
+                }
+                printf("%s\n", menu);
+
+                // Input user choice
+                printf("Enter your choice (or enter 0 to logout): ");
+                scanf("%d", &choice);
+
+                // Send choice to the server
+                if (send(sockfd, &choice, sizeof(choice), 0) <= 0) {
+                    perror("Error sending choice");
+                    close(sockfd);
+                    exit(0);
+                }
+
+                // Handle exit condition (logging out)
+                if (choice == 0) {
+                    printf("Logging out...\n");
+                    break;  // Exit the inner menu loop
+                }
+
+                // Process role-specific actions based on the choice
+                if (strcmp(role, "Customer") == 0) {
+                    customerCase(username, choice);
+                } 
+                else if(strcmp(role,"Employee") == 0){
+                    empCase(username,choice);
+                }
+                else if(strcmp(role,"Manager") == 0){
+                    manCase(username,choice);
+                }
+                else if(strcmp(role,"Admin") == 0){
+                    adminCase(username,choice);
+                }
+
+
+            }
+
+<<<<<<< HEAD
+        } else {
+            printf("Login failed. Please try again.\n");
+=======
+            else if (strcmp(buffer,"Manager")==0){
+                memset(buffer, 0, sizeof(buffer)); 
+                displayManMenu(username);
+            }
+            else if (strcmp(buffer,"Admin") == 0){
+                memset(buffer, 0, sizeof(buffer)); 
+                displayAdminMenu(username);
+            }
+
+            
+
+            break;
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
+        }
+
+        printf("Do you want to try logging in again? (y/n): ");
+        char retry;
+        scanf(" %c", &retry); 
+        if (retry == 'n' || retry == 'N') {
+            printf("Exiting the client.\n");
+            break;
+        }
+    }while(1);
+
+    close(sockfd);
+>>>>>>> 2e475b2db8a3364cdb5353b4c7ab08ce150de7cd
     return 0;
 }

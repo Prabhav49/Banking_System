@@ -22,6 +22,7 @@
 // void displayCustomerMenu(const char *username) {
 //     int choice;
 
+<<<<<<< HEAD
 //     while (1) {
 //         printf("\nCustomer Menu:\n");
 //         printf("1. View Account Balance\n");
@@ -39,6 +40,25 @@
 //         printf("13. User Info\n");
 //         printf("Enter your choice: ");
 //         scanf("%d", &choice);
+=======
+    while (1) {
+        printf("\nCustomer Menu:\n");
+        printf("1. View Account Balance\n");
+        printf("2. Deposit Money\n");
+        printf("3. Withdraw Money\n");
+        printf("4. Transfer Funds\n");
+        printf("5. Apply For a Loan\n");
+        printf("6. Check Loan Status\n");
+        printf("7. Add Feedback\n");
+        printf("8. View Transaction History\n");
+        printf("9. Change Password\n");
+        printf("10. Check Feedback Status\n");
+        printf("11. Logout\n");
+        printf("12. Exit\n");
+        printf("13. User Info\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+>>>>>>> eb84e4dd2cdbdde4094cb23157fe8cbad42d2cda
 
 //         switch (choice) {
 //             case 1:
