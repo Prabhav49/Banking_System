@@ -118,8 +118,8 @@ void customerCase(const char* username,int choice){
                 checkFeedBackStatus(username);
                 break;
             case 11:
-                printf("logging out");
-                exit(0);
+                logout(username);
+                break;
             case 12:
                 exit(0);  
             case 13:

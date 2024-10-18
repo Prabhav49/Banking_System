@@ -98,8 +98,8 @@ void empCase(const char*username, int choice){
                 changePassword(username);
                 break;
             case 8:
-                printf("Logging Out");
-                exit(0);
+                logout(username);
+                break;
             case 9:
                 exit(0); 
             case 10:

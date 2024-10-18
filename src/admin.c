@@ -79,8 +79,8 @@ void adminCase(const char* username,int choice){
                 changePassword(username);
                 break;
             case 5:
-                printf("Logging Out");
-                exit(0);
+                logout(username);
+                break;
             case 6:
                 exit(0); 
             case 7:

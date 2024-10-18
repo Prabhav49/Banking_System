@@ -7,18 +7,28 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include "banking.h"
+#include "customer.h"
+#include "manager.h"
+#include "admin.h"
+#include "employee.h"
 
 #define PORT 8080
-#define BACKLOG 5 // Number of clients that can queue for connections
+#define BACKLOG 5 
+
+   
+
 
 void handle_client(int client_socket) {
-    char buffer[1024];
+   do
+   {
     char username[1024];
     char password[1024];
-
+    char buffer[1024];
+    
     User users[MAX_USERS];
     int userCount = 0;
     loadUsers(users, &userCount);
+
 
     // Wait for the client's username response
     memset(username, 0, sizeof(username));
@@ -29,7 +39,7 @@ void handle_client(int client_socket) {
         return;
     }
     username[bytes_read] = '\0';  // Properly null-terminate the string
-    printf("Client sent Username: %s\n", username);  // Print Username immediately
+    printf("Client sent Username: %s\n", username);
 
     // Wait for the client's password response
     memset(password, 0, sizeof(password));
@@ -40,14 +50,52 @@ void handle_client(int client_socket) {
         return;
     }
     password[bytes_read] = '\0';  // Properly null-terminate the string
-    printf("Client sent Password: %s\n", password);  // Print Password immediately
+    printf("Client sent Password: %s\n", password);
 
     // Authenticate user and send the result back to client
     const char* auth_msg = authenticate(username, password, users, userCount);
-    write(client_socket, auth_msg, strlen(auth_msg));  // Send the auth message to the client
+    
+    // Send the authentication message to the client
+    write(client_socket, auth_msg, strlen(auth_msg));
+    printf("Authentication result: %s\n", auth_msg);
 
-    close(client_socket);  // Close the client socket after handling
+    // If login is successful, check the role and send it to the client
+    if (strcmp(auth_msg, "Login Successful!\n") == 0) {
+        const char* role = checkRole(username, users, userCount);
+
+        // Send the role to the client
+        write(client_socket, role, strlen(role));
+
+        // Print role on the server side
+        printf("User %s has role: %s\n", username, role);
+    }
+    else{
+        continue;
+    }
+
+    int statusReceived;
+    
+    // Read the status from the client
+    if (read(client_socket, &statusReceived, sizeof(statusReceived)) < 0) {
+        perror("Failed to read logout status from client");
+        return;
+    }
+
+    bool loggedOut = (statusReceived != 0); 
+
+    if (loggedOut) {
+        printf("Client has logged out successfully.\n");
+        continue;
+    } else {
+        printf("Client is still logged in.\n");
+    }
+
+    // Close the client socket after handling
+    close(client_socket);
+   } while (1);
+   
 }
+
 
 int main() {
     int server_socket, client_socket;

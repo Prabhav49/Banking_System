@@ -68,7 +68,6 @@ const char* authenticate(const char *username, const char *password, User users[
 
 
 void logout(const char *username) {
-    
     User users[MAX_USERS];
     int userCount = 0;
     int usernameFound = 0;
@@ -83,20 +82,17 @@ void logout(const char *username) {
             if (users[i].isLogIn == true) {
                 users[i].isLogIn = false;  // Mark user as logged out
                 saveUsers(users, userCount);  // Save updated status to file
-                printf("%s Logged Out....\n",username);
-                return;
+                printf("%s Logged Out....\n", username);
             } else {
-                printf("%s is not logged in..\n",username);
+                printf("%s is not logged in..\n", username);
             }
-            return;
+            return;  // Exit the function after processing the user
         }
     }
 
     if (!usernameFound) {
-        printf("User not exist");
+        printf("User does not exist\n");
     }
-
-    return;
 }
 
 // Function to check the role of a user
