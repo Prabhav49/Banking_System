@@ -86,6 +86,10 @@
 // }
 
 void customerCase(const char* username,int choice){
+    printf(" \n");
+    printf("===========YOUR QUERY RESULT===========\n");
+    printf("--------------------------------------------------------\n");
+
     switch (choice) {
             case 1:
                 viewAccountBalance(username);
@@ -121,13 +125,13 @@ void customerCase(const char* username,int choice){
                 logout(username);
                 break;
             case 12:
-                exit(0);  
-            case 13:
                 userInfo(username);
                 break;   
             default:
                 printf("Invalid choice! Please try again.\n");
-        }
+    }
+    printf("--------------------------------------------------------\n");
+
 }
 
 int generateTransactionId() {
@@ -326,7 +330,7 @@ void transferFunds(const char *username) {
                 fclose(file);
                 return;
             }
-            break; // Exit loop once the sender is found
+            break; 
         }
     }
 
@@ -337,33 +341,27 @@ void transferFunds(const char *username) {
         return;
     }
 
-    // Reset file pointer to start searching for the recipient
     rewind(file);
 
     // Search for the recipient
-    long recipientPos = -1; // To keep track of recipient's position
+    long recipientPos = -1; 
     while (fread(&recipient, sizeof(User), 1, file)) {
         if (strcmp(recipient.username, recipientUsername) == 0) {
             foundRecipient = 1;  
-            recipientPos = ftell(file) - sizeof(User); // Save position for the recipient
+            recipientPos = ftell(file) - sizeof(User); 
             break; 
         }
     }
 
-    fclose(file); // Close the file after reading
-
-    // Check if recipient was found
+    fclose(file); 
     if (!foundRecipient) {
         printf("Recipient not found.\n");
         return;
     }
-
-    // If both sender and recipient are valid, proceed with the transfer
-    // Update balances
     sender.balance -= transferAmount; 
     recipient.balance += transferAmount; 
 
-    // Reopen the file to write the updated balances
+
     file = fopen("../db/users.db", "r+b");
     if (!file) {
         perror("Failed to open database");
@@ -375,10 +373,10 @@ void transferFunds(const char *username) {
     fwrite(&sender, sizeof(User), 1, file); 
 
     // Update the recipient's information
-    fseek(file, recipientPos, SEEK_SET); // Move to the recipient's position
+    fseek(file, recipientPos, SEEK_SET); 
     fwrite(&recipient, sizeof(User), 1, file); 
 
-    fclose(file); // Close the file after writing
+    fclose(file); 
 
     printf("Transferred %.2f to %s's account. New balance: %.2f\n", transferAmount, recipient.username, sender.balance);
     recordTransaction(sender.username,sender.username, recipient.username, "Transfer", transferAmount, sender.balance); 
@@ -423,23 +421,23 @@ void viewTransactionHistory(const char *username) {
     int foundTransactions = 0;
 
     printf("Transaction History for User %s (ID: %d):\n", username, user.id);
-    printf("----------------------------------------------------------------------------------------------------------\n");
-    printf("%-15s %-15s %-15s %-15s %-10s %-10s %s\n", "Transaction ID", "Sender ID", "Receiver ID", "Type", "Amount","Balance", "Date/Time");
-    printf("----------------------------------------------------------------------------------------------------------\n");
+    printf("------------------------------------------------------------------------------------------------------------------\n");
+    printf("%-15s %-15s %-15s %-15s %-12s %-12s %-25s\n", 
+        "Transaction ID", "Sender ID", "Receiver ID", "Type", "Amount", "Balance", "Date/Time");
+    printf("------------------------------------------------------------------------------------------------------------------\n");
 
     // Read all transactions and filter by user ID
     while (fread(&transaction, sizeof(Transaction), 1, file)) {
         if (strcmp(transaction.tranUser, user.username) == 0) {
             foundTransactions = 1; 
-            printf("%-15d  %-15s %-15s %-15s %.2f %.2f %s\n", 
-                   transaction.transactionId,
-                   transaction.sendUser, 
-                   transaction.recUser, 
-                   transaction.type, 
-                   transaction.amount,
-                   transaction.currBalance, 
-                   transaction.dateTime);
-                   
+            printf("%-15d %-15s %-15s %-15s %-12.2f %-12.2f %-25s\n", 
+                transaction.transactionId,
+                transaction.sendUser, 
+                transaction.recUser, 
+                transaction.type, 
+                transaction.amount,
+                transaction.currBalance, 
+                transaction.dateTime);
         }
     }
 
@@ -508,26 +506,27 @@ void checkLoanStatus(const char *username) {
         return;
     }
 
-    // Table header with Loan ID
-    printf("+-------------+-----------------+------------+------------+-----------------+---------------+----------------+\n");
-    printf("| Loan ID     |    Loan Amount  |   Status   |  Duration  |  Interest Rate  | Assigned Emp  |     User ID    |\n");
-    printf("+-------------+-----------------+------------+------------+-----------------+---------------+----------------+\n");
+   // Table header with Loan ID
+        printf("+-------------+-----------------+------------+------------+-----------------+---------------+-----------------------+\n");
+        printf("| Loan ID     |   Loan Amount    |   Status   |  Duration  |  Interest Rate  | Assigned Emp  |        User ID         |\n");
+        printf("+-------------+-----------------+------------+------------+-----------------+---------------+-----------------------+\n");
 
-    // Search through all loan records for the given username
-    while (fread(&loanRecord, sizeof(Loan), 1, file)) {
-        if (strcmp(loanRecord.userId, username) == 0) {
-            printf("| %7d | %15.2lf | %10s | %10d | %15.2f%% | %13s | %23s |\n",
-                   loanRecord.loanId,
-                   loanRecord.loanAmount,
-                   loanRecord.status,
-                   loanRecord.durationMonths,
-                   loanRecord.interestRate,
-                   loanRecord.assignedEmployeeId[0] == '\0' ? "N/A" : loanRecord.assignedEmployeeId,  // Show N/A if not assigned
-                   loanRecord.userId[0] == '\0' ? "N/A" : loanRecord.userId); // Show N/A if not assigned
-            found = 1;
+        // Search through all loan records for the given username
+        while (fread(&loanRecord, sizeof(Loan), 1, file)) {
+            if (strcmp(loanRecord.userId, username) == 0) {
+                printf("| %-11d | %15.2lf | %-10s | %-10d | %15.2f%% | %-13s | %-21s |\n",
+                    loanRecord.loanId,
+                    loanRecord.loanAmount,
+                    loanRecord.status,
+                    loanRecord.durationMonths,
+                    loanRecord.interestRate,
+                    loanRecord.assignedEmployeeId[0] == '\0' ? "N/A" : loanRecord.assignedEmployeeId, 
+                    loanRecord.userId[0] == '\0' ? "N/A" : loanRecord.userId);
+                found = 1;
+            }
         }
-    }
-    printf("+-------------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+        printf("+-------------+-----------------+------------+------------+-----------------+---------------+-----------------------+\n");
+
 
 
     fclose(file);

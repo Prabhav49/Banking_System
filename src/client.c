@@ -7,10 +7,12 @@
 #include <netinet/in.h>
 #include "menu.h"
 #include "customer.h"
+#include "banking.h"
 #include "manager.h"
 #include "admin.h"
 #include "employee.h"
 #include <stdbool.h>
+#include <stdint.h> 
 
 
 #define PORT 8080
@@ -47,7 +49,7 @@ bool handleChoice(const char*username, int choice, const char* role){
         if(choice == 5 ) return true;
         else return false;
     }
-    
+    return true;
 }
 
 void displayMenuBasedOnRole(const char* buffer) {
@@ -77,45 +79,67 @@ void displayMenuBasedOnRole(const char* buffer) {
     }
 }
 
+int send_string(int client_socket, const char *str) {
+    uint32_t str_len = strlen(str);
+    
+    if (write(client_socket, &str_len, sizeof(str_len)) <= 0) {
+        return -1; 
+    }
+    if (write(client_socket, str, str_len) <= 0) {
+        return -1;
+    }
+    return 0;
+}
 
 void login_prompt(int client_socket) {
-    while (1) {  // Infinite loop to prompt for login
+    while (1) {
         char username[1024];
         char password[1024];
         char buffer[1024];
         char role[1024];
 
-        // Display and input username from client side
+        // Input username from client side
+        memset(username, 0, sizeof(username));
         printf("Enter Username: ");
         if (fgets(username, sizeof(username), stdin) == NULL) {
             printf("Error reading username.\n");
             continue;
         }
-        username[strcspn(username, "\n")] = 0; 
-        write(client_socket, username, strlen(username));
+        username[strcspn(username, "\n")] = 0; // Remove newline
+        
+        // Send username using the new method
+        if (send_string(client_socket, username) < 0) {
+            printf("Failed to send username.\n");
+            return;
+        }
 
-        // Display and input password from client side
+        // Input password from client side
+        memset(password, 0, sizeof(password));
         printf("Enter Password: ");
         if (fgets(password, sizeof(password), stdin) == NULL) {
             printf("Error reading password.\n");
             continue;
         }
-        password[strcspn(password, "\n")] = 0; 
-        write(client_socket, password, strlen(password));
+        password[strcspn(password, "\n")] = 0; // Remove newline
+        
+        // Send password using the new method
+        if (send_string(client_socket, password) < 0) {
+            printf("Failed to send password.\n");
+            return;
+        }
 
         // Receive and display the authentication message from the server
+        memset(buffer, 0, sizeof(buffer));
         int bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
         if (bytes_read <= 0) {
             printf("Server disconnected.\n");
-            break; 
+            break;
         }
-        buffer[bytes_read] = '\0'; 
-        //Auth result 
-        printf("%s\n", buffer); 
+        buffer[bytes_read] = '\0';
+        printf("%s\n", buffer);
 
         // Check if authentication was successful
         if (strcmp(buffer, "Login Successful!\n") == 0) {
-            // Receive the role from the server
             memset(role, 0, sizeof(role));
             bytes_read = read(client_socket, role, sizeof(role) - 1);
             if (bytes_read <= 0) {
@@ -124,21 +148,61 @@ void login_prompt(int client_socket) {
             }
             role[bytes_read] = '\0';  
 
-            // Print the role
+            // Print the role and handle the menu
             printf("Role: %s\n", role);
-            while (1) {
+            do {
+                 int choice;
                 displayMenuBasedOnRole(role);
-                int choice;
-                printf("Enter Your Choice : ");
-                scanf("%d", &choice);
-                while (getchar() != '\n');
-                if(handleChoice(username, choice, role)){
-                    break;
-                }
-                else continue;
-            }
-            sendLogoutStatus(client_socket, true);
+                do{
 
+                    printf("Enter Your Choice (Press 0 for Exit) : ");
+                    scanf("%d", &choice);
+                    if(choice == 0){
+                        logout(username);
+                        close(client_socket);
+                        return;
+                    }
+
+                    if(strcmp(role,"Customer") == 0){
+                        if(choice > 12 || choice < 1){
+                            printf("Invalid Choice Try Again..\n");
+                            continue;
+                        }
+                        else break;
+                    }
+                    else if(strcmp(role,"Employee") == 0){
+                        if(choice > 9 || choice < 1){
+                            printf("Invalid Choice Try Again..\n");
+                            continue;
+                        }
+                        else break;
+                    }
+                    else if(strcmp(role,"Manager") == 0){
+                        if(choice > 6 || choice < 1){
+                            printf("Invalid Choice Try Again..\n");
+                            continue;
+                        }
+                        else break;
+                    }
+                    else if(strcmp(role,"Manager") == 0){
+                        if(choice > 6 || choice < 1){
+                            printf("Invalid Choice Try Again..\n");
+                            continue;
+                        }
+                        else break;
+                    }
+
+                }while(1);
+
+
+                while (getchar() != '\n'); 
+                if (handleChoice(username, choice, role)) {
+                    break;
+                }        
+            } while (1);
+
+            // Send logout status to server
+            sendLogoutStatus(client_socket, true);
         } else {
             continue;
         }

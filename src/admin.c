@@ -65,6 +65,9 @@
 // }
 
 void adminCase(const char* username,int choice){
+    printf(" \n");
+    printf("===========YOUR QUERY RESULT===========\n");
+    printf("--------------------------------------------------------\n");
     switch (choice) {
             case 1:
                 addNewEmp();
@@ -82,13 +85,13 @@ void adminCase(const char* username,int choice){
                 logout(username);
                 break;
             case 6:
-                exit(0); 
-            case 7:
                 userInfo(username); 
                 break;    
             default:
                 printf("Invalid choice! Please try again.\n");
         }
+
+        printf("--------------------------------------------------------\n");
 }
 
 void addNewEmp(){

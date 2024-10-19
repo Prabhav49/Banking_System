@@ -65,6 +65,9 @@
 
 
 void manCase(const char* username,int choice){
+    printf(" \n");
+    printf("===========YOUR QUERY RESULT===========\n");
+    printf("--------------------------------------------------------\n");
      switch (choice) {
             case 1:
                 activateOrDeactivate();
@@ -82,13 +85,12 @@ void manCase(const char* username,int choice){
                 logout(username);
                 break;
             case 6:
-                exit(0); 
-            case 7:
                 userInfo(username); 
                 break;    
             default:
                 printf("Invalid choice! Please try again.\n");
-        }
+     }
+     printf("--------------------------------------------------------\n");
 }
 
 void activateOrDeactivate() {
@@ -255,12 +257,14 @@ void reviewCustFeedBack() {
     printf("All Customer Feedbacks:\n\n");
     while (fread(&feedbackRecord, sizeof(Feedback), 1, feedFile)) {
         // Print each feedback with its details
+        printf("----------------------------------------------\n" );
         printf("Feedback No: %d\n", feedbackRecord.feedNo);
         printf("Username: %s\n", feedbackRecord.username);
         printf("Feedback: %s\n", feedbackRecord.feedback);
         printf("Status: %s\n", feedbackRecord.status);
         printf("Feedback Time: %s\n", feedbackRecord.feedbackTime);
         printf("Status Update Time: %s\n\n", feedbackRecord.statusUpdateTime);
+        printf("----------------------------------------------\n" );
     }
 
     // Ask the manager to enter the feedback ID to work on

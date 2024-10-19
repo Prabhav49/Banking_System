@@ -11,6 +11,7 @@ char* getCustomerMenu() {
     }
 
     sprintf(menu, "\nCustomer Menu:\n"
+                  "----------------------------------\n" 
                   "1. View Account Balance\n"
                   "2. Deposit Money\n"
                   "3. Withdraw Money\n"
@@ -22,8 +23,9 @@ char* getCustomerMenu() {
                   "9. Change Password\n"
                   "10. Check Feedback Status\n"
                   "11. Logout\n"
-                  "12. Exit\n"
-                  "13. User Info\n");
+                  "12. User Info\n"
+                  "----------------------------------\n" );
+
 
     return menu;  // Return the pointer to the menu
 }
@@ -37,6 +39,7 @@ char* getEmployeeMenu() {
     }
 
     sprintf(menu, "\nEmployee Menu:\n"
+                  "----------------------------------\n" 
                   "1. Add New Customer\n"
                   "2. Modify Customer Detail\n"
                   "3. Process Loan Application\n"
@@ -45,8 +48,8 @@ char* getEmployeeMenu() {
                   "6. View Customer Transaction\n"
                   "7. Change Password\n"
                   "8. Logout\n"
-                  "9. Exit\n"
-                  "10. User Info\n");
+                  "9. User Info\n"
+                  "----------------------------------\n" );
 
     return menu;  // Return the pointer to the menu
 }
@@ -60,13 +63,14 @@ char* getManagerMenu() {
     }
 
     sprintf(menu, "\nManager Menu:\n"
+                  "----------------------------------\n" 
                   "1. Activate/Deactivate Customer Account\n"
                   "2. Assign Loan Application to Employee\n"
                   "3. Review Customer Feedback\n"
                   "4. Change Password\n"
                   "5. Logout\n"
-                  "6. Exit\n"
-                  "7. User Info\n");
+                  "6. User Info\n"
+                  "----------------------------------\n" );
 
     return menu;  // Return the pointer to the menu
 }
@@ -80,13 +84,14 @@ char* getAdminMenu() {
     }
 
     sprintf(menu, "\nAdministration Menu:\n"
+                  "----------------------------------\n" 
                   "1. Add New Bank Employee\n"
                   "2. Modify Customer/Employee Details\n"
                   "3. Manage User Roles\n"
                   "4. Change Password\n"
                   "5. Logout\n"
-                  "6. Exit\n"
-                  "7. User Info\n");
+                  "6. User Info\n"
+                  "----------------------------------\n" );
 
     return menu;  // Return the pointer to the menu
 }

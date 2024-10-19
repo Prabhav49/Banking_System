@@ -75,6 +75,9 @@
 
 
 void empCase(const char*username, int choice){
+    printf(" \n");
+    printf("===========YOUR QUERY RESULT===========\n");
+    printf("--------------------------------------------------------\n");
     switch (choice) {
             case 1:
                 addNewCustomer();
@@ -101,13 +104,12 @@ void empCase(const char*username, int choice){
                 logout(username);
                 break;
             case 9:
-                exit(0); 
-            case 10:
                 userInfo(username); 
                 break;    
             default:
                 printf("Invalid choice! Please try again.\n");
-        }
+    }
+    printf("--------------------------------------------------------\n");
 }
 
 int generateUserId() {
@@ -177,7 +179,7 @@ void addNewCustomer(){
     printf("Press Enter to start\n");
     // Consume the leftover newline character from the previous input
     getchar(); 
-    // Prompt for a unique username
+
     printf("\nEnter Full Name: ");
     scanf("%99[^\n]", fullName);
     getchar(); 
@@ -220,7 +222,7 @@ void modifyCustomerDetail() {
     printf("Enter the username of the Customer to modify: ");
     scanf("%s", username);
 
-    FILE *userFile = fopen(USER_DB_PATH, "rb+");  // Open file for reading and writing
+    FILE *userFile = fopen(USER_DB_PATH, "rb+"); 
     if (userFile == NULL) {
         printf("Error: Could not open user database.\n");
         return;
@@ -323,27 +325,28 @@ void processLoanApplication(const char *username) {
     }
 
     // Display header for the table
-    printf("Loans Assigned to Employee (ID: %s) for Processing:\n", employeeId);
-    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
-    printf("| Loan ID |    Loan Amount  |   Status   |  Duration  |  Interest Rate  |  Username     |  User ID                |\n");
-    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+        printf("Loans Assigned to Employee (ID: %s) for Processing:\n", employeeId);
+        printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+        printf("| Loan ID |   Loan Amount    |   Status   |  Duration  |  Interest Rate  |   Username    |        User ID           |\n");
+        printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
 
-    // Loop through loans and find ones with "Processing" status and assigned to this employee
-    found = 0;  // Reset found flag
-    while (fread(&loanRecord, sizeof(Loan), 1, loanFile)) {
-        if (strcmp(loanRecord.assignedEmployeeId, employeeId) == 0 && strcmp(loanRecord.status, "Processing") == 0) {
-            printf("| %7d | %15.2lf | %10s | %10d | %15.2f%% | %13s | %23s |\n",
-                   loanRecord.loanId,
-                   loanRecord.loanAmount,
-                   loanRecord.status,
-                   loanRecord.durationMonths,
-                   loanRecord.interestRate,
-                   loanRecord.username,
-                   loanRecord.userId);
-            found = 1;
+        // Loop through loans and find ones with "Processing" status and assigned to this employee
+        found = 0;  // Reset found flag
+        while (fread(&loanRecord, sizeof(Loan), 1, loanFile)) {
+            if (strcmp(loanRecord.assignedEmployeeId, employeeId) == 0 && strcmp(loanRecord.status, "Processing") == 0) {
+                printf("| %-7d | %15.2lf | %-10s | %-10d | %15.2f%% | %-13s | %-23s |\n",
+                    loanRecord.loanId,
+                    loanRecord.loanAmount,
+                    loanRecord.status,
+                    loanRecord.durationMonths,
+                    loanRecord.interestRate,
+                    loanRecord.username[0] == '\0' ? "N/A" : loanRecord.username,
+                    loanRecord.userId[0] == '\0' ? "N/A" : loanRecord.userId);
+                found = 1;
+            }
         }
-    }
-    printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+        printf("+---------+-----------------+------------+------------+-----------------+---------------+-------------------------+\n");
+
 
     if (!found) {
         printf("No loans in 'Processing' status assigned to you.\n");
@@ -597,23 +600,26 @@ void viewCustTrans() {
     int foundTransactions = 0;
 
     printf("Transaction History for User %s (ID: %d):\n", username, user.id);
-    printf("--------------------------------------------------------------------------------------------------\n");
-    printf("%-15s %-15s %-15s %-15s %-10s %s\n", "Transaction ID", "Sender ", "Receiver ", "Type", "Amount", "Date/Time");
-    printf("--------------------------------------------------------------------------------------------------\n");
+    printf("----------------------------------------------------------------------------------------------------------------------\n");
+    printf("%-15s %-15s %-15s %-15s %-10s %s\n", 
+        "Transaction ID", "Sender", "Receiver", "Type", "Amount", "Date/Time");
+    printf("----------------------------------------------------------------------------------------------------------------------\n");
 
     // Read all transactions and filter by user ID
     while (fread(&transaction, sizeof(Transaction), 1, file)) {
-        if (strcmp(transaction.tranUser ,user.username ) == 0) {
+        if (strcmp(transaction.tranUser, user.username) == 0) {
             foundTransactions = 1; 
-            printf("%-15d %-15s %-15s %-15s %.2f %s\n", 
-                   transaction.transactionId, 
-                   transaction.sendUser, 
-                   transaction.recUser, 
-                   transaction.type, 
-                   transaction.amount, 
-                   transaction.dateTime);
+            printf("%-15d %-15s %-15s %-15s %-10.2f %s\n", 
+                transaction.transactionId, 
+                transaction.sendUser, 
+                transaction.recUser, 
+                transaction.type, 
+                transaction.amount, 
+                transaction.dateTime);
         }
     }
+    printf("----------------------------------------------------------------------------------------------------------------------\n");
+
 
     if (!foundTransactions) {
         printf("No transactions found for User %s.\n", username);
