@@ -622,23 +622,22 @@ void addFeedback(const char *username) {
         return;
     }
 
-    // Assign a new feedback number (increment from the last one in the file)
     fseek(feedFile, 0, SEEK_END);
     long fileSize = ftell(feedFile);
     if (fileSize == 0) {
-        feedbackRecord.feedNo = 1;  // First feedback
+        feedbackRecord.feedNo = 1;
     } else {
         fseek(feedFile, -sizeof(Feedback), SEEK_END);
         fread(&feedbackRecord, sizeof(Feedback), 1, feedFile);
-        feedbackRecord.feedNo += 1;  // Increment feedback number
+        feedbackRecord.feedNo += 1;  
     }
 
     // Set feedback details
     strcpy(feedbackRecord.username, username);
     
-    // Ask user to enter feedback
+   // Ask user to enter feedback
     printf("Enter your feedback (2-3 sentences):\n");
-    getchar();  // Consume newline left by previous input
+    fflush(stdin);  // Flush any remaining input in the buffer
     fgets(feedbackRecord.feedback, 300, stdin);
     
     // Set default status and time details

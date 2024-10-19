@@ -156,7 +156,7 @@ void addCust(const char *fullName, const char *username, const char *password, c
     strncpy(user.role, role, sizeof(user.role) - 1);
     user.balance = balance;
     user.active = active;
-
+    user.isLogIn = false;
     // Open the database file in append mode
     FILE *file = fopen("../db/users.db", "ab"); // Open for appending in binary mode
     if (!file) {
@@ -174,7 +174,7 @@ void addNewCustomer(){
     double balance;
     int active;
 
-  
+    printf("Press Enter to start\n");
     // Consume the leftover newline character from the previous input
     getchar(); 
     // Prompt for a unique username

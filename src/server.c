@@ -21,7 +21,7 @@
 void handle_client(int client_socket) {
    do
    {
-    char username[1024];
+     char username[1024];
     char password[1024];
     char buffer[1024];
     
@@ -69,10 +69,6 @@ void handle_client(int client_socket) {
         // Print role on the server side
         printf("User %s has role: %s\n", username, role);
     }
-    else{
-        continue;
-    }
-
     int statusReceived;
     
     // Read the status from the client
@@ -81,7 +77,7 @@ void handle_client(int client_socket) {
         return;
     }
 
-    bool loggedOut = (statusReceived != 0); 
+    bool loggedOut = (statusReceived != 0); // Convert int back to bool
 
     if (loggedOut) {
         printf("Client has logged out successfully.\n");
