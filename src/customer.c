@@ -294,7 +294,6 @@ void withdrawMoney(const char *username) {
         printf("User not found.\n");
     }
 }
-
 void transferFunds(const char *username) {
     FILE *file = fopen("../db/users.db", "r+b");
     if (!file) {
@@ -313,24 +312,27 @@ void transferFunds(const char *username) {
     printf("Enter the amount to transfer: ");
     scanf("%f", &transferAmount);
     printf("Enter recipient username: ");
-    scanf("%49s", recipientUsername); 
+    scanf("%49s", recipientUsername);
 
-    // Read through the file to find the sender
+    // Mark: Find the sender, but also note the position
+    long senderPos = -1; // Store the position of the sender record
     while (fread(&sender, sizeof(User), 1, file)) {
         if (strcmp(sender.username, username) == 0) {
             if (sender.active) {
-                foundSender = 1; 
+                foundSender = 1;
                 if (sender.balance < transferAmount) {
                     printf("Error: Transfer amount exceeds current balance. Transaction failed.\n");
                     fclose(file);
-                    return; 
+                    return;
                 }
+                // Mark: Store the current file position of the sender
+                senderPos = ftell(file) - sizeof(User); // Adjust the position to the start of the sender record
             } else {
                 printf("User account is inactive. Cannot transfer money.\n");
                 fclose(file);
                 return;
             }
-            break; 
+            break;
         }
     }
 
@@ -344,43 +346,45 @@ void transferFunds(const char *username) {
     rewind(file);
 
     // Search for the recipient
-    long recipientPos = -1; 
+    long recipientPos = -1; // Store the position of the recipient record
     while (fread(&recipient, sizeof(User), 1, file)) {
         if (strcmp(recipient.username, recipientUsername) == 0) {
-            foundRecipient = 1;  
-            recipientPos = ftell(file) - sizeof(User); 
-            break; 
+            foundRecipient = 1;
+            // Mark: Store the current file position of the recipient
+            recipientPos = ftell(file) - sizeof(User); // Adjust the position to the start of the recipient record
+            break;
         }
     }
 
-    fclose(file); 
+    fclose(file);
     if (!foundRecipient) {
         printf("Recipient not found.\n");
         return;
     }
-    sender.balance -= transferAmount; 
-    recipient.balance += transferAmount; 
 
+    sender.balance -= transferAmount;
+    recipient.balance += transferAmount;
 
+    // Mark: Reopen the file to update both sender and recipient
     file = fopen("../db/users.db", "r+b");
     if (!file) {
         perror("Failed to open database");
         return;
     }
 
-    // Write back updated sender information
-    fseek(file, -sizeof(User), SEEK_CUR); 
-    fwrite(&sender, sizeof(User), 1, file); 
+    // Mark: Write back updated sender information at the correct position
+    fseek(file, senderPos, SEEK_SET); // Move to sender's position
+    fwrite(&sender, sizeof(User), 1, file);
 
-    // Update the recipient's information
-    fseek(file, recipientPos, SEEK_SET); 
-    fwrite(&recipient, sizeof(User), 1, file); 
+    // Mark: Write back updated recipient information at the correct position
+    fseek(file, recipientPos, SEEK_SET); // Move to recipient's position
+    fwrite(&recipient, sizeof(User), 1, file);
 
-    fclose(file); 
+    fclose(file);
 
     printf("Transferred %.2f to %s's account. New balance: %.2f\n", transferAmount, recipient.username, sender.balance);
-    recordTransaction(sender.username,sender.username, recipient.username, "Transfer", transferAmount, sender.balance); 
-    recordTransaction(recipient.username,sender.username, recipient.username, "Transfer", transferAmount, recipient.balance); 
+    recordTransaction(sender.username, sender.username, recipient.username, "Transfer", transferAmount, sender.balance);
+    recordTransaction(recipient.username, sender.username, recipient.username, "Transfer", transferAmount, recipient.balance);
 }
 
 
