@@ -12,78 +12,65 @@
 #include "admin.h"
 #include "employee.h"
 #include <stdbool.h>
-#include <stdint.h> 
-
+#include <stdint.h>
 
 #define PORT 8080
+#define BUFFER_SIZE 1024
+#define MAX_INPUT_LENGTH 1024
+
 int choice;
 
 void sendLogoutStatus(int client_socket, bool loggedOut) {
     int statusToSend = loggedOut ? 1 : 0;
-    
+
     // Send the integer value to the server
     if (write(client_socket, &statusToSend, sizeof(statusToSend)) < 0) {
         perror("Failed to send logout status to server");
     }
 }
 
-bool handleChoice(const char*username, int choice, const char* role){
-
-    if(strcmp(role,"Customer")==0){
-        customerCase(username,choice);
-        if(choice == 11 ) return true;
-        else return false;
+bool handleChoice(const char* username, int choice, const char* role) {
+    // Implement role-specific choice handling here
+    if (strcmp(role, "Customer") == 0) {
+        customerCase(username, choice);
+        return (choice == 11);
+    } else if (strcmp(role, "Employee") == 0) {
+        empCase(username, choice);
+        return (choice == 8);
+    } else if (strcmp(role, "Admin") == 0) {
+        adminCase(username, choice);
+        return (choice == 5);
+    } else if (strcmp(role, "Manager") == 0) {
+        manCase(username, choice);
+        return (choice == 5);
     }
-    else if(strcmp(role,"Employee")==0){
-        empCase(username,choice);
-        if(choice == 8 ) return true;
-        else return false;
-    }
-    else if(strcmp(role,"Admin")==0){
-        adminCase(username,choice);
-        if(choice == 5 ) return true;
-        else return false;
-    }
-    else if(strcmp(role,"Manager")==0){
-        manCase(username,choice);
-        if(choice == 5 ) return true;
-        else return false;
-    }
-    return true;
+    return false; // Invalid role
 }
 
-void displayMenuBasedOnRole(const char* buffer) {
+void displayMenuBasedOnRole(const char* role) {
+    char* menu = NULL;
 
-    if (strcmp(buffer, "Customer") == 0) {
-        char* menu = getCustomerMenu();
-        printf("%s", menu); 
-        free(menu);    
+    if (strcmp(role, "Customer") == 0) {
+        menu = getCustomerMenu();
+    } else if (strcmp(role, "Manager") == 0) {
+        menu = getManagerMenu();
+    } else if (strcmp(role, "Employee") == 0) {
+        menu = getEmployeeMenu();
+    } else if (strcmp(role, "Admin") == 0) {
+        menu = getAdminMenu();
+    } else {
+        printf("Invalid role: %s\n", role);
+        return;
     }
-    else if (strcmp(buffer, "Manager") == 0) {
-        char* menu = getManagerMenu();
-        printf("%s", menu);  
-        free(menu);
-    }
-    else if (strcmp(buffer, "Employee") == 0) {
-        char* menu = getEmployeeMenu();
-        printf("%s", menu);  // Print the Employee menu
-        free(menu);         // Free the allocated memory
-    }
-    else if (strcmp(buffer, "Admin") == 0) {
-        char* menu = getAdminMenu();
-        printf("%s", menu);  // Print the Admin menu
-        free(menu);         // Free the allocated memory
-    }
-    else {
-        printf("Invalid role: %s\n", buffer);
-    }
+    printf("%s", menu);
+    free(menu);
 }
 
 int send_string(int client_socket, const char *str) {
     uint32_t str_len = strlen(str);
-    
+
     if (write(client_socket, &str_len, sizeof(str_len)) <= 0) {
-        return -1; 
+        return -1;
     }
     if (write(client_socket, str, str_len) <= 0) {
         return -1;
@@ -91,12 +78,18 @@ int send_string(int client_socket, const char *str) {
     return 0;
 }
 
+void flushInputBuffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) {} 
+}
+
 void login_prompt(int client_socket) {
     while (1) {
-        char username[1024];
-        char password[1024];
-        char buffer[1024];
-        char role[1024];
+        char username[MAX_INPUT_LENGTH];
+        char password[MAX_INPUT_LENGTH];
+        char role[MAX_INPUT_LENGTH];    
+
+        printf("================ WELCOME TO BANK ================\n");
 
         // Input username from client side
         memset(username, 0, sizeof(username));
@@ -106,8 +99,8 @@ void login_prompt(int client_socket) {
             continue;
         }
         username[strcspn(username, "\n")] = 0; // Remove newline
-        
-        // Send username using the new method
+
+        // Send username
         if (send_string(client_socket, username) < 0) {
             printf("Failed to send username.\n");
             return;
@@ -121,25 +114,26 @@ void login_prompt(int client_socket) {
             continue;
         }
         password[strcspn(password, "\n")] = 0; // Remove newline
-        
-        // Send password using the new method
+
+        // Send password
         if (send_string(client_socket, password) < 0) {
             printf("Failed to send password.\n");
             return;
         }
 
-        // Receive and display the authentication message from the server
-        memset(buffer, 0, sizeof(buffer));
-        int bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
+
+        printf("===============================================\n");
+
+        // Receive authentication status (1 for success, 0 for failure)
+        int auth_status;
+        int bytes_read = read(client_socket, &auth_status, sizeof(auth_status));
         if (bytes_read <= 0) {
             printf("Server disconnected.\n");
             break;
         }
-        buffer[bytes_read] = '\0';
-        printf("%s\n", buffer);
 
-        // Check if authentication was successful
-        if (strcmp(buffer, "Login Successful!\n") == 0) {
+        if (auth_status == 1) {
+            // Authentication successful, now receive the role
             memset(role, 0, sizeof(role));
             bytes_read = read(client_socket, role, sizeof(role) - 1);
             if (bytes_read <= 0) {
@@ -147,84 +141,63 @@ void login_prompt(int client_socket) {
                 break;
             }
             role[bytes_read] = '\0';  
-
-            // Print the role and handle the menu
             printf("Role: %s\n", role);
             do {
-                 int choice;
                 displayMenuBasedOnRole(role);
-                do{
-
-                    printf("Enter Your Choice (Press 0 for Exit) : ");
-                    scanf("%d", &choice);
-                    if(choice == 0){
+                do {
+                    printf("Enter Your Choice (Press 0 for Exit): ");
+                    if (scanf("%d", &choice) != 1) {
+                        flushInputBuffer(); // Clear invalid input
+                        printf("Invalid input. Try again.\n");
+                        continue;
+                    }
+                    flushInputBuffer(); // Clear buffer after reading choice
+                    if (choice == 0) {
                         logout(username);
+                        sendLogoutStatus(client_socket, true);
                         close(client_socket);
                         return;
                     }
 
-                    if(strcmp(role,"Customer") == 0){
-                        if(choice > 12 || choice < 1){
-                            printf("Invalid Choice Try Again..\n");
-                            continue;
-                        }
-                        else break;
+                    // Validate choice based on role
+                    if ((strcmp(role, "Customer") == 0 && (choice < 1 || choice > 12)) ||
+                        (strcmp(role, "Employee") == 0 && (choice < 1 || choice > 9)) ||
+                        (strcmp(role, "Manager") == 0 && (choice < 1 || choice > 6)) ||
+                        (strcmp(role, "Admin") == 0 && (choice < 1 || choice > 5))) {
+                        printf("Invalid Choice. Try Again..\n");
+                        continue;
                     }
-                    else if(strcmp(role,"Employee") == 0){
-                        if(choice > 9 || choice < 1){
-                            printf("Invalid Choice Try Again..\n");
-                            continue;
-                        }
-                        else break;
-                    }
-                    else if(strcmp(role,"Manager") == 0){
-                        if(choice > 6 || choice < 1){
-                            printf("Invalid Choice Try Again..\n");
-                            continue;
-                        }
-                        else break;
-                    }
-                    else if(strcmp(role,"Manager") == 0){
-                        if(choice > 6 || choice < 1){
-                            printf("Invalid Choice Try Again..\n");
-                            continue;
-                        }
-                        else break;
-                    }
-
-                }while(1);
-
-
-                while (getchar() != '\n'); 
-                if (handleChoice(username, choice, role)) {
                     break;
-                }        
-            } while (1);
+                } while (1);
 
-            // Send logout status to server
+                if (handleChoice(username, choice, role)) {
+                    break; 
+                }
+            } while (1);
             sendLogoutStatus(client_socket, true);
         } else {
+            // Authentication failed
+            printf("Login Unsuccessful!!\n");
             continue;
         }
     }
 }
 
-
 int main() {
     int client_socket;
     struct sockaddr_in server_addr;
 
-    // Create socket (IPv4, TCP)
+    // Create socket
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket == -1) {
         perror("Socket creation failed");
         exit(1);
     }
 
-    // Define the server address
+    // Define server address
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); // Server IP address (localhost)
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); // Server IP address
 
     // Connect to the server
     if (connect(client_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
@@ -235,8 +208,8 @@ int main() {
 
     printf("Connected to the server.\n");
 
-    // Call login_prompt directly since we are not waiting for any server prompt
-    login_prompt(client_socket);  // Handle username and password input
+    // Handle login prompt
+    login_prompt(client_socket);
 
     close(client_socket);
     return 0;

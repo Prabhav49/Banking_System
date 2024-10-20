@@ -32,7 +32,7 @@ void saveUsers(User users[], int userCount) {
 
 // Function to authenticate a user, updating the isLogIn status if successful
 const char* authenticate(const char *username, const char *password, User users[], int userCount) {
-    static char msg[100];
+    static char msg[100];  // Static to persist after function return
     int usernameFound = 0;
 
     for (int i = 0; i < userCount; i++) {
@@ -41,26 +41,25 @@ const char* authenticate(const char *username, const char *password, User users[
             if (strcmp(users[i].password, password) == 0) {
                 // Password matches, now check account status
                 if (users[i].active == 1) {
-                    if(users[i].isLogIn == false){
+                    if (users[i].isLogIn == false) {
                         users[i].isLogIn = true;  // Mark user as logged in
                         saveUsers(users, userCount);  // Save updated status to file
-                        strcpy(msg, "Login Successful!\n");
-                    }
-                    else{
-                        strcpy(msg, "Login Failed! User is already logged in.\n");
+                        strcpy(msg, "Login Successful!");
+                    } else {
+                        strcpy(msg, "Login Failed! User is already logged in.");
                     }
                 } else {
-                    strcpy(msg, "Login Failed! Account is inactive.\n");
+                    strcpy(msg, "Login Failed! Account is inactive.");
                 }
             } else {
-                strcpy(msg, "Password is incorrect.\n");
+                strcpy(msg, "Password is incorrect.");
             }
             return msg;
         }
     }
 
     if (!usernameFound) {
-        strcpy(msg, "Username does not exist.\n");
+        strcpy(msg, "Username does not exist.");
     }
 
     return msg;

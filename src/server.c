@@ -16,34 +16,44 @@
 
 #define PORT 8080
 #define BACKLOG 5 
-
-
+#define MAX_STRING_LENGTH 1024 // Maximum length for username and password
+int flag;
 int recv_string(int client_socket, char *dest, size_t max_len) {
     uint32_t str_len;
 
+    // Check if the client disconnected
     if (read(client_socket, &str_len, sizeof(str_len)) <= 0) {
-        return -1; 
+        return -1; // Client disconnected or read error
     }
 
+    // Error handling for large strings
     if (str_len >= max_len) {
-        return -1;
+        fprintf(stderr, "Received string length exceeds buffer size.\n");
+        return -1; // Prevent buffer overflow
     }
+
+    // Read the string content
     int bytes_read = read(client_socket, dest, str_len);
     if (bytes_read <= 0) {
-        return -1;
+        return -1; // Error or disconnection
     }
-    dest[bytes_read] = '\0'; 
+
+    dest[bytes_read] = '\0'; // Null-terminate the string
     return 0;
 }
 void handle_client(int client_socket) {
-    char username[1024];
-    char password[1024];
+    char username[MAX_STRING_LENGTH];
+    char password[MAX_STRING_LENGTH];
     
     User users[MAX_USERS];
     int userCount = 0;
     loadUsers(users, &userCount);
 
     while (1) {
+        // Clear buffers before receiving new data
+        memset(username, 0, sizeof(username));
+        memset(password, 0, sizeof(password));
+
         // Receive username using the new method
         if (recv_string(client_socket, username, sizeof(username)) < 0) {
             printf("Client disconnected or error while receiving username.\n");
@@ -60,18 +70,25 @@ void handle_client(int client_socket) {
         }
         printf("Client sent Password: %s\n", password);
 
-        // Authenticate the user
+       // Authenticate the user
         const char* auth_msg = authenticate(username, password, users, userCount);
-        write(client_socket, auth_msg, strlen(auth_msg));
-        printf("Authentication result: %s\n", auth_msg);
+        int checkAuth = (strcmp("Login Successful!", auth_msg) == 0) ? 1 : 0;
 
-        // If authentication is successful, send role
-        if (strcmp(auth_msg, "Login Successful!\n") == 0) {
+        // Send the authentication status (1 for success, 0 for failure)
+        if (write(client_socket, &checkAuth, sizeof(checkAuth)) < 0) {
+            printf("Failed to send authentication status to client.\n");
+            close(client_socket);
+            return;
+        }
+        printf("Authentication result: %s (Auth status: %d)\n", auth_msg, checkAuth);
+
+        // If authentication is successful, send the user's role
+        if (checkAuth == 1) {
             const char* role = checkRole(username, users, userCount);
             write(client_socket, role, strlen(role));
             printf("User %s has role: %s\n", username, role);
         } else {
-            // Client failed to log in; continue to the next iteration
+            printf("Login Unsuccessful!\n");
             continue;
         }
 
@@ -85,8 +102,6 @@ void handle_client(int client_socket) {
         bool loggedOut = (statusReceived != 0);
         if (loggedOut) {
             printf("Client has logged out successfully.\n");
-            memset(username, 0, sizeof(username));
-            memset(password, 0, sizeof(password));
             continue;  
         } else {
             printf("Client is still logged in.\n");
@@ -95,6 +110,7 @@ void handle_client(int client_socket) {
 
     close(client_socket);
 }
+
 
 int main() {
     int server_socket, client_socket;
@@ -141,12 +157,11 @@ int main() {
         // Fork a new process to handle each client
         if (fork() == 0) {
             // Child process: handle client
-            close(server_socket); // Close the listening socket in the child process
+            close(server_socket); 
             handle_client(client_socket);
-            exit(0); // Exit the child process when done
+            exit(0); 
         } else {
-            // Parent process: continue to accept new clients
-            close(client_socket); // Close client socket in parent
+            close(client_socket); 
         }
     }
 
