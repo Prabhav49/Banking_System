@@ -11,34 +11,31 @@
 #include "manager.h"
 #include "admin.h"
 #include "employee.h"
-
 #include <stdint.h> // For uint32_t
 
 #define PORT 8080
 #define BACKLOG 5 
-#define MAX_STRING_LENGTH 1024 // Maximum length for username and password
+#define MAX_STRING_LENGTH 1024
 int flag;
 int recv_string(int client_socket, char *dest, size_t max_len) {
     uint32_t str_len;
 
-    // Check if the client disconnected
     if (read(client_socket, &str_len, sizeof(str_len)) <= 0) {
-        return -1; // Client disconnected or read error
+        return -1; 
     }
 
-    // Error handling for large strings
     if (str_len >= max_len) {
         fprintf(stderr, "Received string length exceeds buffer size.\n");
-        return -1; // Prevent buffer overflow
+        return -1; 
     }
 
     // Read the string content
     int bytes_read = read(client_socket, dest, str_len);
     if (bytes_read <= 0) {
-        return -1; // Error or disconnection
+        return -1;
     }
 
-    dest[bytes_read] = '\0'; // Null-terminate the string
+    dest[bytes_read] = '\0';
     return 0;
 }
 void handle_client(int client_socket) {
@@ -50,7 +47,6 @@ void handle_client(int client_socket) {
     loadUsers(users, &userCount);
 
     while (1) {
-        // Clear buffers before receiving new data
         memset(username, 0, sizeof(username));
         memset(password, 0, sizeof(password));
 
@@ -117,26 +113,22 @@ int main() {
     struct sockaddr_in server_addr, client_addr;
     socklen_t addr_size;
 
-    // Create a socket (IPv4, TCP)
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket == -1) {
         perror("Socket creation failed");
         exit(1);
     }
 
-    // Define the server address
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT); // Port number
-    server_addr.sin_addr.s_addr = INADDR_ANY; // Accept any incoming connection
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = INADDR_ANY; 
 
-    // Bind the socket to the specified IP and port
     if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
         perror("Bind failed");
         close(server_socket);
         exit(1);
     }
 
-    // Start listening for connections (up to BACKLOG clients in the queue)
     if (listen(server_socket, BACKLOG) == -1) {
         perror("Listen failed");
         close(server_socket);
@@ -145,7 +137,6 @@ int main() {
     
     printf("Server is listening on port %d...\n", PORT);
 
-    // Infinite loop to accept and handle clients
     while (1) {
         addr_size = sizeof(client_addr);
         client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &addr_size);
@@ -154,9 +145,7 @@ int main() {
             continue;
         }
 
-        // Fork a new process to handle each client
         if (fork() == 0) {
-            // Child process: handle client
             close(server_socket); 
             handle_client(client_socket);
             exit(0); 
